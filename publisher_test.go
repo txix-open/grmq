@@ -1,4 +1,4 @@
-package rmq_test
+package grmq_test
 
 import (
 	"context"
@@ -17,7 +17,7 @@ func TestPublisher_Publish(t *testing.T) {
 	ch := amqpChannel(t, url)
 
 	pub := publisher.New("", "test")
-	unit := rmq.NewPublisher(pub, ch)
+	unit := grmq.NewPublisher(pub, ch)
 	err := unit.Run()
 	require.NoError(err)
 
@@ -41,7 +41,7 @@ func TestPublisher_PublishTo(t *testing.T) {
 	ch := amqpChannel(t, url)
 
 	pub := publisher.New("", "test")
-	unit := rmq.NewPublisher(pub, ch)
+	unit := grmq.NewPublisher(pub, ch)
 	err := unit.Run()
 	require.NoError(err)
 
@@ -64,7 +64,7 @@ func TestPublisher_Close(t *testing.T) {
 	declareQueue(t, ch, "test")
 
 	pub := publisher.New("", "test")
-	unit := rmq.NewPublisher(pub, ch)
+	unit := grmq.NewPublisher(pub, ch)
 	err := unit.Run()
 	require.NoError(err)
 

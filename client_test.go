@@ -1,4 +1,4 @@
-package rmq_test
+package grmq_test
 
 import (
 	"context"
@@ -27,11 +27,11 @@ func TestClient(t *testing.T) {
 	})
 	consumer := consumer.New(handler, "queue")
 	observer := NewObserverCounter()
-	cli := rmq.New(url,
-		rmq.WithPublishers(pub),
-		rmq.WithConsumers(consumer),
-		rmq.WithObserver(observer),
-		rmq.WithTopologyBuilding(
+	cli := grmq.New(url,
+		grmq.WithPublishers(pub),
+		grmq.WithConsumers(consumer),
+		grmq.WithObserver(observer),
+		grmq.WithTopologyBuilding(
 			topology.WithQueue("queue"),
 			topology.WithDirectExchange("exchange"),
 			topology.WithBinding("exchange", "queue", "test"),
@@ -70,7 +70,7 @@ func TestClient_RunError(t *testing.T) {
 		}},
 	}
 	observer := NewObserverCounter()
-	cli := rmq.New(url, rmq.WithDeclarations(declarations), rmq.WithObserver(observer))
+	cli := grmq.New(url, grmq.WithDeclarations(declarations), grmq.WithObserver(observer))
 	err := cli.Run(context.Background())
 	require.Error(err)
 
@@ -101,10 +101,10 @@ func TestDLQ(t *testing.T) {
 		await <- struct{}{}
 	})
 	consumer := consumer.New(handler, "queue")
-	cli := rmq.New(url,
-		rmq.WithPublishers(pub),
-		rmq.WithConsumers(consumer),
-		rmq.WithTopologyBuilding(
+	cli := grmq.New(url,
+		grmq.WithPublishers(pub),
+		grmq.WithConsumers(consumer),
+		grmq.WithTopologyBuilding(
 			topology.WithQueue("queue", topology.WithDLQ(true)),
 		),
 	)
@@ -139,10 +139,10 @@ func TestPersistentMode(t *testing.T) {
 		await <- struct{}{}
 	})
 	consumer := consumer.New(handler, "queue")
-	cli := rmq.New(url,
-		rmq.WithPublishers(pub),
-		rmq.WithConsumers(consumer),
-		rmq.WithTopologyBuilding(
+	cli := grmq.New(url,
+		grmq.WithPublishers(pub),
+		grmq.WithConsumers(consumer),
+		grmq.WithTopologyBuilding(
 			topology.WithQueue("queue"),
 		),
 	)

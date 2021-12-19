@@ -1,4 +1,4 @@
-package rmq_test
+package grmq_test
 
 import (
 	"context"
@@ -27,7 +27,7 @@ func TestConsumer_Run(t *testing.T) {
 	})
 	consumerCfg := consumer.New(handler, "test")
 
-	consumer := rmq.NewConsumer(consumerCfg, ch, rmq.NoopObserver{})
+	consumer := grmq.NewConsumer(consumerCfg, ch, grmq.NoopObserver{})
 	err := consumer.Run()
 	require.NoError(err)
 
@@ -58,7 +58,7 @@ func TestConsumer_RunWithConcurrency(t *testing.T) {
 	})
 	consumerCfg := consumer.New(handler, "test", consumer.WithConcurrency(2), consumer.WithPrefetchCount(2))
 
-	consumer := rmq.NewConsumer(consumerCfg, ch, rmq.NoopObserver{})
+	consumer := grmq.NewConsumer(consumerCfg, ch, grmq.NoopObserver{})
 	err := consumer.Run()
 	require.NoError(err)
 
@@ -88,7 +88,7 @@ func TestConsumer_ConsumerError(t *testing.T) {
 	consumerCfg := consumer.New(handler, "test")
 
 	observer := NewObserverCounter()
-	consumer := rmq.NewConsumer(consumerCfg, ch, observer)
+	consumer := grmq.NewConsumer(consumerCfg, ch, observer)
 	err := consumer.Run()
 	require.NoError(err)
 
@@ -125,7 +125,7 @@ func TestConsumer_AsyncHandler(t *testing.T) {
 	})
 	consumerCfg := consumer.New(handler, "test")
 
-	consumer := rmq.NewConsumer(consumerCfg, ch, rmq.NoopObserver{})
+	consumer := grmq.NewConsumer(consumerCfg, ch, grmq.NoopObserver{})
 	err := consumer.Run()
 	require.NoError(err)
 
@@ -154,7 +154,7 @@ func TestConsumer_GracefulClose(t *testing.T) {
 	consumerCfg := consumer.New(handler, "test", consumer.WithPrefetchCount(5), consumer.WithConcurrency(5))
 
 	observer := NewObserverCounter()
-	consumer := rmq.NewConsumer(consumerCfg, ch, observer)
+	consumer := grmq.NewConsumer(consumerCfg, ch, observer)
 	err := consumer.Run()
 	require.NoError(err)
 

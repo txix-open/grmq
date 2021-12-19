@@ -15,7 +15,7 @@ import (
 )
 
 type LogObserver struct {
-	rmq.NoopObserver
+	grmq.NoopObserver
 }
 
 func (o LogObserver) ClientError(err error) {
@@ -49,17 +49,17 @@ func main() {
 		consumer.WithPrefetchCount(32), //default 1
 	)
 
-	cli := rmq.New(
+	cli := grmq.New(
 		url,
-		rmq.WithPublishers(pub),
-		rmq.WithConsumers(consumer),
-		rmq.WithTopologyBuilding(
+		grmq.WithPublishers(pub),
+		grmq.WithConsumers(consumer),
+		grmq.WithTopologyBuilding(
 			topology.WithQueue("queue", topology.WithDLQ(true)),
 			topology.WithDirectExchange("exchange"),
 			topology.WithBinding("exchange", "queue", "test"),
 		),
-		rmq.WithReconnectTimeout(3*time.Second), //default 1s
-		rmq.WithObserver(LogObserver{}),
+		grmq.WithReconnectTimeout(3*time.Second), //default 1s
+		grmq.WithObserver(LogObserver{}),
 	)
 	//it tries to connect
 	//declare topology

@@ -1,4 +1,4 @@
-package rmq
+package grmq
 
 import (
 	"time"

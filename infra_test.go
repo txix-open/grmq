@@ -1,4 +1,4 @@
-package rmq_test
+package grmq_test
 
 import (
 	"crypto/rand"

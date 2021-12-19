@@ -1,4 +1,4 @@
-package rmq
+package grmq
 
 import (
 	"github.com/integration-system/grmq/consumer"
