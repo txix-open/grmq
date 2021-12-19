@@ -1,5 +1,9 @@
 # GRMQ
 ## Go Rabbit MQ
+![Build and test](https://github.com/integration-system/grmq/actions/workflows/main.yml/badge.svg)
+[![codecov](https://codecov.io/gh/integration-system/bgjob/branch/main/graph/badge.svg?token=ZEX2Y8ZWKZ)](https://codecov.io/gh/integration-system/grmq)
+[![Go Report Card](https://goreportcard.com/badge/github.com/integration-system/grmq)](https://goreportcard.com/report/github.com/integration-system/grmq)
+
 What are the typical use-cases of RabbitMQ broker ?
 * We create a durable topology (exchanges, queues, binding).
 * Begin queue consuming (commonly in several goroutines with prefetch count) and use [DLQ](https://www.rabbitmq.com/dlx.html) to avoid poison messages.
