@@ -1,0 +1,29 @@
+name: Build and test
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: golang:1.17
+    services:
+      rmq:
+        image: rabbitmq:3.9-management-alpine
+        options: >-
+          --health-cmd rabbitmqctl await_startup
+          --health-timeout 10s
+          --health-retries 1
+        ports:
+          - 5672:5672
+          - 15672:15672
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run coverage
+        env:
+          RMQ_HOST: rmq
+        run: go test -race -coverprofile=coverage.out -covermode=atomic
+      - uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+
