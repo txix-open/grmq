@@ -10,7 +10,7 @@ jobs:
       rmq:
         image: rabbitmq:3.9-management-alpine
         options: >-
-          --health-cmd rabbitmqctl await_startup
+          --health-cmd "rabbitmqctl await_startup"
           --health-timeout 10s
           --health-retries 1
         ports:
