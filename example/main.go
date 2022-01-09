@@ -23,7 +23,7 @@ func (o LogObserver) ClientError(err error) {
 }
 
 func (o LogObserver) ConsumerError(consumer consumer.Consumer, err error) {
-	log.Printf("unexpected consumer error (queueu=%s): %v", consumer.Queue, err)
+	log.Printf("unexpected consumer error (queue=%s): %v", consumer.Queue, err)
 }
 
 func main() {

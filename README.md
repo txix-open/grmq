@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/integration-system/grmq/branch/main/graph/badge.svg?token=JMTTJ5O6WB)](https://codecov.io/gh/integration-system/grmq)
 [![Go Report Card](https://goreportcard.com/badge/github.com/integration-system/grmq)](https://goreportcard.com/report/github.com/integration-system/grmq)
 
-What are the typical use-cases of RabbitMQ broker ?
+What are the typical use-cases for RabbitMQ broker ?
 * We create a durable topology (exchanges, queues, binding).
 * Begin queue consuming (commonly in several goroutines with prefetch count) and use [DLQ](https://www.rabbitmq.com/dlx.html) to avoid poison messages.
 * Also, we expect that if something happens with connection, we can reestablish it and continue our work transparently.
@@ -32,7 +32,7 @@ func (o LogObserver) ClientError(err error) {
 }
 
 func (o LogObserver) ConsumerError(consumer consumer.Consumer, err error) {
-	log.Printf("unexpected consumer error (queueu=%s): %v", consumer.Queue, err)
+	log.Printf("unexpected consumer error (queue=%s): %v", consumer.Queue, err)
 }
 
 func main() {
@@ -92,7 +92,6 @@ func main() {
 
 ## State and road map
 * the package is not tested well and hasn't been used in production yet
-* API should be stabilized
 * more tests need to be implemented
 * add supporting for publishing confirmation to achieve more reliable publishing
 * there is a local case when we need a batch of deliveries
