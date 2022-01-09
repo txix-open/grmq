@@ -39,6 +39,46 @@ func TestConsumer_Run(t *testing.T) {
 
 	err = consumer.Close()
 	require.NoError(err)
+
+	require.EqualValues(0, queueSize(t, url, "test"))
+}
+
+func TestConsumer_RunWithMiddlewares(t *testing.T) {
+	require := require.New(t)
+	url := amqpUrl(t)
+	ch := amqpChannel(t, url)
+	declareQueue(t, ch, "test")
+
+	publishMessages(t, ch, "test", 1)
+
+	await := make(chan struct{})
+	value := atomic.NewInt32(0)
+	handler := consumer.HandlerFunc(func(ctx context.Context, delivery *consumer.Delivery) {
+		err := delivery.Ack()
+		require.NoError(err)
+		await <- struct{}{}
+	})
+	consumerCfg := consumer.New(handler, "test", consumer.WithMiddlewares(func(next consumer.Handler) consumer.Handler {
+		return consumer.HandlerFunc(func(ctx context.Context, delivery *consumer.Delivery) {
+			value.Add(1)
+			next.Handle(ctx, delivery)
+		})
+	}))
+
+	consumer := grmq.NewConsumer(consumerCfg, ch, grmq.NoopObserver{})
+	err := consumer.Run()
+	require.NoError(err)
+
+	select {
+	case <-await:
+	case <-time.After(1 * time.Second):
+		require.Fail("handler wasn't called")
+	}
+
+	require.EqualValues(1, value.Load())
+
+	err = consumer.Close()
+	require.NoError(err)
 }
 
 func TestConsumer_RunWithConcurrency(t *testing.T) {
