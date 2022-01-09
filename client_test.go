@@ -2,6 +2,7 @@ package grmq_test
 
 import (
 	"context"
+	"net/url"
 	"testing"
 	"time"
 
@@ -83,11 +84,24 @@ func TestClient_RunError(t *testing.T) {
 	require.EqualValues(1, observer.shutdownDone.Load())
 }
 
+func TestInvalidCred(t *testing.T) {
+	require := require.New(t)
+
+	amqpUrl := amqpUrl(t)
+	u, err := url.Parse(amqpUrl)
+	require.NoError(err)
+	u.User = url.UserPassword(u.User.Username(), "invalid_pass")
+
+	cli := grmq.New(u.String())
+	err = cli.Run(context.Background())
+	require.Error(err)
+}
+
 func TestDLQ(t *testing.T) {
 	require := require.New(t)
 
 	url := amqpUrl(t)
-	pub := publisher.New("", "queue")
+	pub := publisher.New("exchange", "key")
 	await := make(chan struct{})
 	value := atomic.NewInt32(0)
 	handler := consumer.HandlerFunc(func(ctx context.Context, delivery *consumer.Delivery) {
@@ -106,6 +120,8 @@ func TestDLQ(t *testing.T) {
 		grmq.WithConsumers(consumer),
 		grmq.WithTopologyBuilding(
 			topology.WithQueue("queue", topology.WithDLQ(true)),
+			topology.WithDirectExchange("exchange"),
+			topology.WithBinding("exchange", "queue", "key"),
 		),
 	)
 	err := cli.Run(context.Background())

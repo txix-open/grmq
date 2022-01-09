@@ -31,6 +31,7 @@ func NewDeclarator(cfg topology.Declarations, ch *amqp.Channel) *Declarator {
 		extraExchanges = append(extraExchanges, dlx)
 
 		queue.Args["x-dead-letter-exchange"] = dlx.Name
+		queue.Args["x-dead-letter-routing-key"] = queue.Name
 
 		dlqName := fmt.Sprintf("%s.%s", queue.Name, DLQSuffix)
 		dlq := topology.NewQueue(dlqName)
