@@ -37,6 +37,13 @@ func WithFanoutExchange(name string) DeclarationsOption {
 	}
 }
 
+func WithTopicExchange(name string) DeclarationsOption {
+	exchange := NewTopicExchange(name)
+	return func(d *Declarations) {
+		d.Exchanges = append(d.Exchanges, exchange)
+	}
+}
+
 func WithBinding(exchangeName string, queueName string, routingKey string) DeclarationsOption {
 	binding := NewBinding(exchangeName, queueName, routingKey)
 	return func(d *Declarations) {

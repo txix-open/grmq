@@ -25,3 +25,11 @@ func NewFanoutExchange(name string) *Exchange {
 		Args: map[string]interface{}{},
 	}
 }
+
+func NewTopicExchange(name string) *Exchange {
+	return &Exchange{
+		Name: name,
+		Type: amqp.ExchangeTopic,
+		Args: map[string]interface{}{},
+	}
+}
