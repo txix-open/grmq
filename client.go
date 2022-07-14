@@ -95,7 +95,7 @@ func (s *Client) runSession(sessNum int, firstSessionErr chan error) (err error)
 
 	conn, err := amqp.Dial(s.url)
 	if err != nil {
-		return errors.WithMessagef(err, "dial to %s", s.url)
+		return errors.WithMessage(err, "dial")
 	}
 	defer conn.Close()
 
