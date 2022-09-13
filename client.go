@@ -125,7 +125,7 @@ func (s *Client) runSession(sessNum int, firstSessionErr chan error) (err error)
 		if err != nil {
 			return errors.WithMessagef(err, "create channel for publisher %d", i)
 		}
-		publisherUnit := NewPublisher(publisher, ch)
+		publisherUnit := NewPublisher(publisher, ch, s.observer)
 		err = publisherUnit.Run()
 		if err != nil {
 			return errors.WithMessagef(err, "run publisher %d", i)

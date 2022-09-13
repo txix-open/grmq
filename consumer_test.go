@@ -2,11 +2,13 @@ package grmq_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/integration-system/grmq"
 	"github.com/integration-system/grmq/consumer"
+	"github.com/integration-system/grmq/publisher"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 )
@@ -217,6 +219,8 @@ type ObserverCounter struct {
 	consumerError   *atomic.Int32
 	shutdownStarted *atomic.Int32
 	shutdownDone    *atomic.Int32
+	publisherError  *atomic.Int32
+	publisherFlow   *atomic.Int32
 }
 
 func NewObserverCounter() *ObserverCounter {
@@ -226,6 +230,8 @@ func NewObserverCounter() *ObserverCounter {
 		consumerError:   atomic.NewInt32(0),
 		shutdownStarted: atomic.NewInt32(0),
 		shutdownDone:    atomic.NewInt32(0),
+		publisherError:  atomic.NewInt32(0),
+		publisherFlow:   atomic.NewInt32(0),
 	}
 }
 
@@ -247,4 +253,13 @@ func (o *ObserverCounter) ShutdownStarted() {
 
 func (o *ObserverCounter) ShutdownDone() {
 	o.shutdownDone.Add(1)
+}
+
+func (o *ObserverCounter) PublisherError(publisher *publisher.Publisher, err error) {
+	fmt.Println(err)
+	o.publisherError.Add(1)
+}
+
+func (o *ObserverCounter) PublishingFlow(publisher *publisher.Publisher, flow bool) {
+	o.publisherFlow.Add(1)
 }
