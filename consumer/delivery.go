@@ -31,11 +31,11 @@ func (d *Delivery) Source() *amqp.Delivery {
 }
 
 func (d *Delivery) Ack() error {
-	defer d.donner.Done()
-
 	if d.handled {
 		return ErrDeliveryAlreadyHandled
 	}
+
+	defer d.donner.Done()
 	d.handled = true
 
 	err := d.source.Ack(false)
@@ -46,11 +46,11 @@ func (d *Delivery) Ack() error {
 }
 
 func (d *Delivery) Nack(requeue bool) error {
-	defer d.donner.Done()
-
 	if d.handled {
 		return ErrDeliveryAlreadyHandled
 	}
+
+	defer d.donner.Done()
 	d.handled = true
 
 	err := d.source.Nack(false, requeue)
