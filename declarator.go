@@ -58,7 +58,7 @@ func (c *Declarator) Run() error {
 	}
 
 	for _, queue := range c.cfg.Queues {
-		_, err := c.ch.QueueDeclare(queue.Name, true, false, false, false, queue.Args)
+		_, err := c.ch.QueueDeclare(queue.Name, queue.Durable, queue.AutoDelete, false, false, queue.Args)
 		if err != nil {
 			return errors.WithMessagef(err, "declare queue '%s'", queue.Name)
 		}
