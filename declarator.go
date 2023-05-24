@@ -1,16 +1,9 @@
 package grmq
 
 import (
-	"fmt"
-
 	"github.com/integration-system/grmq/topology"
 	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
-)
-
-const (
-	DLXName   = "default-dead-letter"
-	DLQSuffix = "DLQ"
 )
 
 type Declarator struct {
@@ -19,32 +12,8 @@ type Declarator struct {
 }
 
 func NewDeclarator(cfg topology.Declarations, ch *amqp.Channel) *Declarator {
-	extraQueues := make([]*topology.Queue, 0)
-	extraExchanges := make([]*topology.Exchange, 0)
-	extraBindings := make([]*topology.Binding, 0)
-	for _, queue := range cfg.Queues {
-		if !queue.DLQ {
-			continue
-		}
-
-		dlx := topology.NewDirectExchange(DLXName)
-		extraExchanges = append(extraExchanges, dlx)
-
-		queue.Args["x-dead-letter-exchange"] = dlx.Name
-		queue.Args["x-dead-letter-routing-key"] = queue.Name
-
-		dlqName := fmt.Sprintf("%s.%s", queue.Name, DLQSuffix)
-		dlq := topology.NewQueue(dlqName)
-		extraQueues = append(extraQueues, dlq)
-
-		binding := topology.NewBinding(dlx.Name, dlqName, queue.Name)
-		extraBindings = append(extraBindings, binding)
-	}
-	cfg.Queues = append(cfg.Queues, extraQueues...)
-	cfg.Exchanges = append(cfg.Exchanges, extraExchanges...)
-	cfg.Bindings = append(cfg.Bindings, extraBindings...)
 	return &Declarator{
-		cfg: cfg,
+		cfg: topology.Compile(cfg),
 		ch:  ch,
 	}
 }

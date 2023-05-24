@@ -1,17 +1,19 @@
 package topology
 
 import (
+	"github.com/integration-system/grmq/retry"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type QueueOption func(q *Queue)
 
 type Queue struct {
-	Name       string
-	DLQ        bool
-	Durable    bool
-	AutoDelete bool
-	Args       amqp.Table
+	Name        string
+	DLQ         bool
+	Durable     bool
+	AutoDelete  bool
+	RetryPolicy *retry.Policy
+	Args        amqp.Table
 }
 
 func NewQueue(name string, opts ...QueueOption) *Queue {
@@ -47,5 +49,11 @@ func WithAutoDelete(value bool) QueueOption {
 func WithQueueArg(key string, value interface{}) QueueOption {
 	return func(q *Queue) {
 		q.Args[key] = value
+	}
+}
+
+func WithRetryPolicy(policy retry.Policy) QueueOption {
+	return func(q *Queue) {
+		q.RetryPolicy = &policy
 	}
 }

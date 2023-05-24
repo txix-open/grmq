@@ -120,15 +120,10 @@ func (s *Client) runSession(sessNum int, firstSessionErr chan error) (err error)
 		}
 	}()
 
-	for i, publisher := range s.publishers {
-		ch, err = conn.Channel()
+	for _, publisher := range s.publishers {
+		publisherUnit, err := s.runPublisher(publisher, conn)
 		if err != nil {
-			return errors.WithMessagef(err, "create channel for publisher %d", i)
-		}
-		publisherUnit := NewPublisher(publisher, ch, s.observer)
-		err = publisherUnit.Run()
-		if err != nil {
-			return errors.WithMessagef(err, "run publisher %d", i)
+			return errors.WithMessagef(err, "run publisher exchange: '%s', routingKey: '%s'", publisher.Exchange, publisher.RoutingKey)
 		}
 		closers = append(closers, publisherUnit)
 	}
@@ -136,9 +131,17 @@ func (s *Client) runSession(sessNum int, firstSessionErr chan error) (err error)
 	for _, consumer := range s.consumers {
 		ch, err = conn.Channel()
 		if err != nil {
-			return errors.WithMessagef(err, "create channel for consumer for '%s'", consumer.Queue)
+			return errors.WithMessagef(err, "create channel for consumer '%s'", consumer.Queue)
 		}
-		consumerUnit := NewConsumer(consumer, ch, s.observer)
+		var retryPub *Publisher
+		if consumer.RetryPolicy != nil {
+			retryPub, err = s.runPublisher(publisher.New("", ""), conn)
+			if err != nil {
+				return errors.WithMessagef(err, "run retry publisher for consumer '%s'", consumer.Queue)
+			}
+			closers = append(closers, retryPub)
+		}
+		consumerUnit := NewConsumer(consumer, ch, retryPub, s.observer)
 		err = consumerUnit.Run()
 		if err != nil {
 			return errors.WithMessagef(err, "run consumer '%s'", consumer.Queue)
@@ -173,4 +176,17 @@ func (s *Client) Shutdown() {
 	s.observer.ShutdownStarted()
 	<-s.shutdownDone
 	s.observer.ShutdownDone()
+}
+
+func (s *Client) runPublisher(publisher *publisher.Publisher, conn *amqp.Connection) (*Publisher, error) {
+	ch, err := conn.Channel()
+	if err != nil {
+		return nil, errors.WithMessage(err, "create channel")
+	}
+	publisherUnit := NewPublisher(publisher, ch, s.observer)
+	err = publisherUnit.Run()
+	if err != nil {
+		return nil, errors.WithMessage(err, "run publisher")
+	}
+	return publisherUnit, nil
 }

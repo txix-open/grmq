@@ -1,5 +1,9 @@
 package consumer
 
+import (
+	"github.com/integration-system/grmq/retry"
+)
+
 type Option func(c *Consumer)
 
 func WithName(name string) Option {
@@ -23,5 +27,11 @@ func WithConcurrency(concurrency int) Option {
 func WithMiddlewares(middlewares ...Middleware) Option {
 	return func(c *Consumer) {
 		c.Middlewares = middlewares
+	}
+}
+
+func WithRetryPolicy(policy retry.Policy) Option {
+	return func(c *Consumer) {
+		c.RetryPolicy = &policy
 	}
 }

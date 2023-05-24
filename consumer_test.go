@@ -3,6 +3,7 @@ package grmq_test
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -10,11 +11,12 @@ import (
 	"github.com/integration-system/grmq/consumer"
 	"github.com/integration-system/grmq/publisher"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 )
 
 func TestConsumer_Run(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
+
 	url := amqpUrl(t)
 	ch := amqpChannel(t, url)
 	declareQueue(t, ch, "test")
@@ -29,7 +31,7 @@ func TestConsumer_Run(t *testing.T) {
 	})
 	consumerCfg := consumer.New(handler, "test")
 
-	consumer := grmq.NewConsumer(consumerCfg, ch, grmq.NoopObserver{})
+	consumer := grmq.NewConsumer(consumerCfg, ch, nil, grmq.NoopObserver{})
 	err := consumer.Run()
 	require.NoError(err)
 
@@ -46,7 +48,9 @@ func TestConsumer_Run(t *testing.T) {
 }
 
 func TestConsumer_RunWithMiddlewares(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
+
 	url := amqpUrl(t)
 	ch := amqpChannel(t, url)
 	declareQueue(t, ch, "test")
@@ -54,7 +58,7 @@ func TestConsumer_RunWithMiddlewares(t *testing.T) {
 	publishMessages(t, ch, "test", 1)
 
 	await := make(chan struct{})
-	value := atomic.NewInt32(0)
+	value := atomic.Int32{}
 	handler := consumer.HandlerFunc(func(ctx context.Context, delivery *consumer.Delivery) {
 		err := delivery.Ack()
 		require.NoError(err)
@@ -67,7 +71,7 @@ func TestConsumer_RunWithMiddlewares(t *testing.T) {
 		})
 	}))
 
-	consumer := grmq.NewConsumer(consumerCfg, ch, grmq.NoopObserver{})
+	consumer := grmq.NewConsumer(consumerCfg, ch, nil, grmq.NoopObserver{})
 	err := consumer.Run()
 	require.NoError(err)
 
@@ -84,14 +88,16 @@ func TestConsumer_RunWithMiddlewares(t *testing.T) {
 }
 
 func TestConsumer_RunWithConcurrency(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
+
 	url := amqpUrl(t)
 	ch := amqpChannel(t, url)
 	declareQueue(t, ch, "test")
 
 	publishMessages(t, ch, "test", 2)
 
-	value := atomic.NewInt32(0)
+	value := atomic.Int32{}
 	handler := consumer.HandlerFunc(func(ctx context.Context, delivery *consumer.Delivery) {
 		time.Sleep(3 * time.Second)
 		value.Add(1)
@@ -100,7 +106,7 @@ func TestConsumer_RunWithConcurrency(t *testing.T) {
 	})
 	consumerCfg := consumer.New(handler, "test", consumer.WithConcurrency(2), consumer.WithPrefetchCount(2))
 
-	consumer := grmq.NewConsumer(consumerCfg, ch, grmq.NoopObserver{})
+	consumer := grmq.NewConsumer(consumerCfg, ch, nil, grmq.NoopObserver{})
 	err := consumer.Run()
 	require.NoError(err)
 
@@ -112,7 +118,9 @@ func TestConsumer_RunWithConcurrency(t *testing.T) {
 }
 
 func TestConsumer_ConsumerError(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
+
 	url := amqpUrl(t)
 	ch := amqpChannel(t, url)
 	declareQueue(t, ch, "test")
@@ -130,7 +138,7 @@ func TestConsumer_ConsumerError(t *testing.T) {
 	consumerCfg := consumer.New(handler, "test")
 
 	observer := NewObserverCounter()
-	consumer := grmq.NewConsumer(consumerCfg, ch, observer)
+	consumer := grmq.NewConsumer(consumerCfg, ch, nil, observer)
 	err := consumer.Run()
 	require.NoError(err)
 
@@ -149,14 +157,16 @@ func TestConsumer_ConsumerError(t *testing.T) {
 }
 
 func TestConsumer_AsyncHandler(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
+
 	url := amqpUrl(t)
 	ch := amqpChannel(t, url)
 	declareQueue(t, ch, "test")
 
 	publishMessages(t, ch, "test", 1)
 
-	value := atomic.NewInt32(0)
+	value := atomic.Int32{}
 	handler := consumer.HandlerFunc(func(ctx context.Context, delivery *consumer.Delivery) {
 		go func() {
 			time.Sleep(500 * time.Millisecond)
@@ -167,7 +177,7 @@ func TestConsumer_AsyncHandler(t *testing.T) {
 	})
 	consumerCfg := consumer.New(handler, "test")
 
-	consumer := grmq.NewConsumer(consumerCfg, ch, grmq.NoopObserver{})
+	consumer := grmq.NewConsumer(consumerCfg, ch, nil, grmq.NoopObserver{})
 	err := consumer.Run()
 	require.NoError(err)
 
@@ -180,13 +190,14 @@ func TestConsumer_AsyncHandler(t *testing.T) {
 func TestConsumer_GracefulClose(t *testing.T) {
 	require := require.New(t)
 	url := amqpUrl(t)
+
 	ch := amqpChannel(t, url)
 	declareQueue(t, ch, "test")
 
 	messagesCount := 10
 	publishMessages(t, ch, "test", messagesCount)
 
-	value := atomic.NewInt32(0)
+	value := atomic.Int32{}
 	handler := consumer.HandlerFunc(func(ctx context.Context, delivery *consumer.Delivery) {
 		time.Sleep(50 * time.Millisecond)
 		err := delivery.Ack()
@@ -196,7 +207,7 @@ func TestConsumer_GracefulClose(t *testing.T) {
 	consumerCfg := consumer.New(handler, "test", consumer.WithPrefetchCount(5), consumer.WithConcurrency(5))
 
 	observer := NewObserverCounter()
-	consumer := grmq.NewConsumer(consumerCfg, ch, observer)
+	consumer := grmq.NewConsumer(consumerCfg, ch, nil, observer)
 	err := consumer.Run()
 	require.NoError(err)
 
@@ -225,13 +236,13 @@ type ObserverCounter struct {
 
 func NewObserverCounter() *ObserverCounter {
 	return &ObserverCounter{
-		clientReady:     atomic.NewInt32(0),
-		clientError:     atomic.NewInt32(0),
-		consumerError:   atomic.NewInt32(0),
-		shutdownStarted: atomic.NewInt32(0),
-		shutdownDone:    atomic.NewInt32(0),
-		publisherError:  atomic.NewInt32(0),
-		publisherFlow:   atomic.NewInt32(0),
+		clientReady:     &atomic.Int32{},
+		clientError:     &atomic.Int32{},
+		consumerError:   &atomic.Int32{},
+		shutdownStarted: &atomic.Int32{},
+		shutdownDone:    &atomic.Int32{},
+		publisherError:  &atomic.Int32{},
+		publisherFlow:   &atomic.Int32{},
 	}
 }
 

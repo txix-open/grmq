@@ -3,19 +3,21 @@ package grmq_test
 import (
 	"context"
 	"net/url"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/integration-system/grmq"
 	"github.com/integration-system/grmq/consumer"
 	"github.com/integration-system/grmq/publisher"
+	"github.com/integration-system/grmq/retry"
 	"github.com/integration-system/grmq/topology"
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 )
 
 func TestClient(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
 
 	url := amqpUrl(t)
@@ -60,6 +62,7 @@ func TestClient(t *testing.T) {
 }
 
 func TestClient_RunError(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
 
 	url := amqpUrl(t)
@@ -98,12 +101,13 @@ func TestInvalidCred(t *testing.T) {
 }
 
 func TestDLQ(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
 
 	url := amqpUrl(t)
 	pub := publisher.New("exchange", "key")
 	await := make(chan struct{})
-	value := atomic.NewInt32(0)
+	value := atomic.Int32{}
 	handler := consumer.HandlerFunc(func(ctx context.Context, delivery *consumer.Delivery) {
 		if value.Add(1) == 1 {
 			err := delivery.Nack(true)
@@ -143,6 +147,7 @@ func TestDLQ(t *testing.T) {
 }
 
 func TestPersistentMode(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
 
 	url := amqpUrl(t)
@@ -175,4 +180,51 @@ func TestPersistentMode(t *testing.T) {
 	}
 
 	cli.Shutdown()
+}
+
+func TestRetries(t *testing.T) {
+	t.Parallel()
+	require := require.New(t)
+
+	url := amqpUrl(t)
+	pub := publisher.New("", "queue")
+	await := make(chan struct{})
+	value := atomic.Int32{}
+	retryPolicy := retry.NewPolicy(
+		true,
+		retry.WithDelay(500*time.Millisecond, 2),
+		retry.WithDelay(1*time.Second, 1),
+	)
+	handler := consumer.HandlerFunc(func(ctx context.Context, delivery *consumer.Delivery) {
+		value := value.Add(1)
+		err := delivery.Retry()
+		require.NoError(err)
+		if value == 4 {
+			await <- struct{}{}
+		}
+	})
+	consumer := consumer.New(handler, "queue", consumer.WithRetryPolicy(retryPolicy))
+	cli := grmq.New(url,
+		grmq.WithPublishers(pub),
+		grmq.WithConsumers(consumer),
+		grmq.WithTopologyBuilding(
+			topology.WithQueue("queue", topology.WithDLQ(true), topology.WithRetryPolicy(retryPolicy)),
+		),
+	)
+	err := cli.Run(context.Background())
+	require.NoError(err)
+
+	err = pub.Publish(context.Background(), &amqp091.Publishing{})
+	require.NoError(err)
+
+	select {
+	case <-await:
+	case <-time.After(5 * time.Second):
+		require.Fail("handler wasn't called")
+	}
+
+	cli.Shutdown()
+
+	require.EqualValues(4, value.Load())
+	require.EqualValues(1, queueSize(t, url, "queue.DLQ"))
 }

@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"fmt"
 	"os"
+
+	"github.com/integration-system/grmq/retry"
 )
 
 type Handler interface {
@@ -25,6 +27,7 @@ type Consumer struct {
 	Concurrency   int
 	PrefetchCount int
 	Middlewares   []Middleware
+	RetryPolicy   *retry.Policy
 
 	handler Handler
 }

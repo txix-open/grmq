@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/integration-system/grmq/consumer"
+	"github.com/integration-system/grmq/retry"
 	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -12,6 +13,7 @@ import (
 type Consumer struct {
 	cfg           consumer.Consumer
 	ch            *amqp.Channel
+	retryer       *retry.Retrier
 	deliveryWg    *sync.WaitGroup
 	workersWg     *sync.WaitGroup
 	workersStop   chan struct{}
@@ -22,10 +24,15 @@ type Consumer struct {
 	deliveries    <-chan amqp.Delivery
 }
 
-func NewConsumer(cfg consumer.Consumer, ch *amqp.Channel, observer Observer) *Consumer {
+func NewConsumer(cfg consumer.Consumer, ch *amqp.Channel, retryPub *Publisher, observer Observer) *Consumer {
+	var retryer *retry.Retrier
+	if cfg.RetryPolicy != nil {
+		retryer = retry.NewRetryer(cfg.Queue, *cfg.RetryPolicy, retryPub)
+	}
 	return &Consumer{
 		cfg:           cfg,
 		ch:            ch,
+		retryer:       retryer,
 		workersWg:     &sync.WaitGroup{},
 		deliveryWg:    &sync.WaitGroup{},
 		unexpectedErr: make(chan *amqp.Error, 1),
@@ -70,7 +77,7 @@ func (c *Consumer) runWorker() {
 				return
 			}
 			c.deliveryWg.Add(1)
-			d := consumer.NewDelivery(c.deliveryWg, &delivery)
+			d := consumer.NewDelivery(c.deliveryWg, &delivery, c.retryer)
 			c.cfg.Handler().Handle(context.Background(), d)
 		case <-c.workersStop:
 			return //unexpected error occurred
