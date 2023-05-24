@@ -17,11 +17,11 @@ type Donner interface {
 type Delivery struct {
 	donner  Donner
 	source  *amqp.Delivery
-	retryer *retry.Retrier
+	retryer *retry.Retryer
 	handled bool
 }
 
-func NewDelivery(donner Donner, source *amqp.Delivery, retrier *retry.Retrier) *Delivery {
+func NewDelivery(donner Donner, source *amqp.Delivery, retrier *retry.Retryer) *Delivery {
 	return &Delivery{
 		donner:  donner,
 		source:  source,

@@ -12,6 +12,7 @@ import (
 )
 
 func TestPublisher_Publish(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
 
 	url := amqpUrl(t)
@@ -40,6 +41,7 @@ func TestPublisher_Publish(t *testing.T) {
 }
 
 func TestPublisher_PublishTo(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
 
 	url := amqpUrl(t)
@@ -61,6 +63,7 @@ func TestPublisher_PublishTo(t *testing.T) {
 }
 
 func TestPublisher_Close(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
 
 	url := amqpUrl(t)
@@ -83,6 +86,7 @@ func TestPublisher_Close(t *testing.T) {
 }
 
 func TestPublisherError(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
 
 	url := amqpUrl(t)

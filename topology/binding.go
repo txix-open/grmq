@@ -16,6 +16,6 @@ func NewBinding(exchangeName string, queueName string, routingKey string) *Bindi
 		ExchangeName: exchangeName,
 		QueueName:    queueName,
 		RoutingKey:   routingKey,
-		Args:         map[string]interface{}{},
+		Args:         map[string]any{},
 	}
 }

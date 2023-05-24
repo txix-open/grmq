@@ -11,21 +11,21 @@ type Publisher interface {
 	PublishWithConfirmation(ctx context.Context, exchange string, routingKey string, msg *amqp.Publishing) error
 }
 
-type Retrier struct {
+type Retryer struct {
 	originalQueue string
 	policy        Policy
 	pub           Publisher
 }
 
-func NewRetryer(originalQueue string, policy Policy, pub Publisher) *Retrier {
-	return &Retrier{
+func NewRetryer(originalQueue string, policy Policy, pub Publisher) *Retryer {
+	return &Retryer{
 		originalQueue: originalQueue,
 		policy:        policy,
 		pub:           pub,
 	}
 }
 
-func (r *Retrier) Do(delivery *amqp.Delivery) error {
+func (r *Retryer) Do(delivery *amqp.Delivery) error {
 	retry := r.nextRetry(delivery)
 	switch {
 	case retry != nil:
@@ -70,7 +70,7 @@ func (r *Retrier) Do(delivery *amqp.Delivery) error {
 	return nil
 }
 
-func (r *Retrier) nextRetry(delivery *amqp.Delivery) *Retry {
+func (r *Retryer) nextRetry(delivery *amqp.Delivery) *Retry {
 	retriesCount := totalTries(delivery.Headers)
 	retriesByPolicies := int64(0)
 	for i := range r.policy.Retries {

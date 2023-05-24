@@ -20,7 +20,7 @@ func NewQueue(name string, opts ...QueueOption) *Queue {
 	q := &Queue{
 		Name:    name,
 		Durable: true, // default value
-		Args:    map[string]interface{}{},
+		Args:    map[string]any{},
 	}
 	for _, opt := range opts {
 		opt(q)
@@ -46,7 +46,7 @@ func WithAutoDelete(value bool) QueueOption {
 	}
 }
 
-func WithQueueArg(key string, value interface{}) QueueOption {
+func WithQueueArg(key string, value any) QueueOption {
 	return func(q *Queue) {
 		q.Args[key] = value
 	}

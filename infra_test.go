@@ -1,6 +1,7 @@
 package grmq_test
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
 	"net/http"
@@ -80,7 +81,7 @@ func publishMessages(t *testing.T, ch *amqp091.Channel, queue string, count int)
 	require := require.New(t)
 
 	for i := 0; i < count; i++ {
-		err := ch.Publish("", queue, true, false, amqp091.Publishing{})
+		err := ch.PublishWithContext(context.Background(), "", queue, true, false, amqp091.Publishing{})
 		require.NoError(err)
 	}
 }

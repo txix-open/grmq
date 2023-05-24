@@ -14,7 +14,7 @@ func NewDirectExchange(name string) *Exchange {
 	return &Exchange{
 		Name: name,
 		Type: amqp.ExchangeDirect,
-		Args: map[string]interface{}{},
+		Args: map[string]any{},
 	}
 }
 
@@ -22,7 +22,7 @@ func NewFanoutExchange(name string) *Exchange {
 	return &Exchange{
 		Name: name,
 		Type: amqp.ExchangeFanout,
-		Args: map[string]interface{}{},
+		Args: map[string]any{},
 	}
 }
 
@@ -30,6 +30,6 @@ func NewTopicExchange(name string) *Exchange {
 	return &Exchange{
 		Name: name,
 		Type: amqp.ExchangeTopic,
-		Args: map[string]interface{}{},
+		Args: map[string]any{},
 	}
 }

@@ -13,7 +13,7 @@ import (
 type Consumer struct {
 	cfg           consumer.Consumer
 	ch            *amqp.Channel
-	retryer       *retry.Retrier
+	retryer       *retry.Retryer
 	deliveryWg    *sync.WaitGroup
 	workersWg     *sync.WaitGroup
 	workersStop   chan struct{}
@@ -25,7 +25,7 @@ type Consumer struct {
 }
 
 func NewConsumer(cfg consumer.Consumer, ch *amqp.Channel, retryPub *Publisher, observer Observer) *Consumer {
-	var retryer *retry.Retrier
+	var retryer *retry.Retryer
 	if cfg.RetryPolicy != nil {
 		retryer = retry.NewRetryer(cfg.Queue, *cfg.RetryPolicy, retryPub)
 	}
