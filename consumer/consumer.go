@@ -9,7 +9,7 @@ import (
 	"github.com/integration-system/grmq/retry"
 )
 
-type HandlerCloser interface {
+type Closer interface {
 	Close()
 }
 
@@ -32,6 +32,7 @@ type Consumer struct {
 	PrefetchCount int
 	Middlewares   []Middleware
 	RetryPolicy   *retry.Policy
+	Closer        Closer
 
 	handler Handler
 }

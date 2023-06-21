@@ -35,3 +35,9 @@ func WithRetryPolicy(policy retry.Policy) Option {
 		c.RetryPolicy = &policy
 	}
 }
+
+func WithCloser(closer Closer) Option {
+	return func(c *Consumer) {
+		c.Closer = closer
+	}
+}
