@@ -110,6 +110,10 @@ func (c *Consumer) Close() error {
 	}
 
 	close(c.closeConsumer)
+	handlerCloser, ok := c.cfg.Handler().(consumer.HandlerCloser)
+	if ok {
+		handlerCloser.Close()
+	}
 	c.workersWg.Wait()
 	c.deliveryWg.Wait()
 

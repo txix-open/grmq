@@ -9,6 +9,10 @@ import (
 	"github.com/integration-system/grmq/retry"
 )
 
+type HandlerCloser interface {
+	Close()
+}
+
 type Handler interface {
 	Handle(ctx context.Context, delivery *Delivery)
 }

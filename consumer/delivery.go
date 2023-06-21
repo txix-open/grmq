@@ -68,12 +68,13 @@ func (d *Delivery) Retry() error {
 		return ErrDeliveryAlreadyHandled
 	}
 
-	if d.retryer == nil {
-		return errors.New("retryer is not initialized. possibly retry policy for consumer was not specified")
-	}
-
 	defer d.donner.Done()
 	d.handled = true
+
+	if d.retryer == nil {
+		_ = d.source.Nack(false, true)
+		return errors.New("retryer is not initialized. possibly retry policy for consumer was not specified. call nack with requeue")
+	}
 
 	err := d.retryer.Do(d.source)
 	if err != nil {
