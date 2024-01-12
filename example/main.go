@@ -87,7 +87,7 @@ func main() {
 	//declare topology
 	//init publishers and consumers
 	//returns first occurred error or nil
-	//or you can use  cli.Serve(context.Background()), which completely non-blocking
+	//or you can use  cli.Serve(context.Background()), which is completely non-blocking
 	err := cli.Run(context.Background())
 	if err != nil {
 		panic(err)
