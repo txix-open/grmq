@@ -15,8 +15,14 @@ type closer interface {
 	Close() error
 }
 
+type DialConfig struct {
+	amqp.Config
+	DialTimeout time.Duration
+}
+
 type Client struct {
 	url              string
+	dialConfig       DialConfig
 	consumers        []consumer.Consumer
 	publishers       []*publisher.Publisher
 	declarations     topology.Declarations
@@ -29,7 +35,14 @@ type Client struct {
 
 func New(url string, options ...ClientOption) *Client {
 	c := &Client{
-		url:              url,
+		url: url,
+		dialConfig: DialConfig{
+			Config: amqp.Config{
+				Heartbeat: 10 * time.Second,
+				Locale:    "en_US",
+			},
+			DialTimeout: 30 * time.Second,
+		},
 		reconnectTimeout: 1 * time.Second,
 		close:            make(chan struct{}),
 		shutdownDone:     make(chan struct{}),
@@ -38,6 +51,15 @@ func New(url string, options ...ClientOption) *Client {
 	for _, opt := range options {
 		opt(c)
 	}
+
+	if c.dialConfig.Dial == nil {
+		timeout := c.dialConfig.DialTimeout
+		if timeout == 0 {
+			timeout = 30 * time.Second
+		}
+		c.dialConfig.Dial = amqp.DefaultDial(timeout)
+	}
+
 	return c
 }
 
@@ -46,10 +68,10 @@ func New(url string, options ...ClientOption) *Client {
 // It means all declarations were applied successfully
 // All publishers were initialized
 // All consumers were run
-// Returns first occurred error during session opening or nil
+// Returns first occurred error during first session opening or nil
 func (s *Client) Run(ctx context.Context) error {
 	firstSessionErr := make(chan error, 1)
-	go s.run(ctx, firstSessionErr)
+	go s.run(ctx, firstSessionErr, true)
 
 	select {
 	case <-ctx.Done():
@@ -59,7 +81,15 @@ func (s *Client) Run(ctx context.Context) error {
 	}
 }
 
-func (s *Client) run(ctx context.Context, firstSessionErr chan error) {
+// Serve
+// Similar to Run but doesn't wait first successful session
+// Just pass to Observer occurred errors and retry
+func (s *Client) Serve(ctx context.Context) {
+	firstSessionErr := make(chan error, 1)
+	go s.run(ctx, firstSessionErr, false)
+}
+
+func (s *Client) run(ctx context.Context, firstSessionErr chan error, expectFirstSuccessSession bool) {
 	defer func() {
 		close(s.shutdownDone)
 	}()
@@ -74,8 +104,13 @@ func (s *Client) run(ctx context.Context, firstSessionErr chan error) {
 
 		s.observer.ClientError(err)
 
+		if err != nil && sessNum == 1 && expectFirstSuccessSession {
+			return
+		}
+
 		select {
 		case <-ctx.Done():
+			s.observer.ClientError(ctx.Err())
 			return
 		case <-s.close:
 			return //shutdown called
@@ -93,7 +128,7 @@ func (s *Client) runSession(sessNum int, firstSessionErr chan error) (err error)
 		}
 	}()
 
-	conn, err := amqp.Dial(s.url)
+	conn, err := amqp.DialConfig(s.url, s.dialConfig.Config)
 	if err != nil {
 		return errors.WithMessage(err, "dial")
 	}
@@ -156,7 +191,7 @@ func (s *Client) runSession(sessNum int, firstSessionErr chan error) (err error)
 
 	s.observer.ClientReady()
 
-	connCloseChan := make(chan *amqp.Error)
+	connCloseChan := make(chan *amqp.Error, 1)
 	connCloseChan = conn.NotifyClose(connCloseChan)
 	select {
 	case err, isOpen := <-connCloseChan:

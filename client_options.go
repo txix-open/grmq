@@ -46,3 +46,9 @@ func WithReconnectTimeout(timeout time.Duration) ClientOption {
 		c.reconnectTimeout = timeout
 	}
 }
+
+func WithDialConfig(config DialConfig) ClientOption {
+	return func(c *Client) {
+		c.dialConfig = config
+	}
+}
