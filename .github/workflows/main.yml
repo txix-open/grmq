@@ -8,7 +8,7 @@ jobs:
     container: golang:1.21
     services:
       rmq:
-        image: rabbitmq:3.13-management-alpine
+        image: rabbitmq:3.12-management-alpine
         options: >-
           --health-cmd "rabbitmqctl await_startup"
           --health-timeout 10s
