@@ -18,7 +18,7 @@ func TestPublisher_Publish(t *testing.T) {
 	url := amqpUrl(t)
 	ch := amqpChannel(t, url)
 
-	counter := NewObserverCounter()
+	counter := NewObserverCounter(t)
 
 	pub := publisher.New("", "test")
 	unit := grmq.NewPublisher(pub, ch, counter)
@@ -92,7 +92,7 @@ func TestPublisherError(t *testing.T) {
 	url := amqpUrl(t)
 	ch := amqpChannel(t, url)
 
-	counter := NewObserverCounter()
+	counter := NewObserverCounter(t)
 	pub := publisher.New("undeclared_exchange", "test")
 	unit := grmq.NewPublisher(pub, ch, counter)
 	err := unit.Run()

@@ -2,6 +2,8 @@ package grmq
 
 import (
 	"context"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/integration-system/grmq/consumer"
@@ -29,11 +31,19 @@ type Client struct {
 	reconnectTimeout time.Duration
 	observer         Observer
 
+	mustReconnect *atomic.Bool
+
+	reportErrOnce      *sync.Once
+	firstOccurredError chan error
+
 	close        chan struct{}
 	shutdownDone chan struct{}
 }
 
 func New(url string, options ...ClientOption) *Client {
+	mustReconnect := &atomic.Bool{}
+	mustReconnect.Store(true)
+
 	c := &Client{
 		url: url,
 		dialConfig: DialConfig{
@@ -43,10 +53,13 @@ func New(url string, options ...ClientOption) *Client {
 			},
 			DialTimeout: 30 * time.Second,
 		},
-		reconnectTimeout: 1 * time.Second,
-		close:            make(chan struct{}),
-		shutdownDone:     make(chan struct{}),
-		observer:         NoopObserver{},
+		reconnectTimeout:   1 * time.Second,
+		mustReconnect:      mustReconnect,
+		reportErrOnce:      &sync.Once{},
+		firstOccurredError: make(chan error, 1),
+		close:              make(chan struct{}),
+		shutdownDone:       make(chan struct{}),
+		observer:           NoopObserver{},
 	}
 	for _, opt := range options {
 		opt(c)
@@ -70,13 +83,13 @@ func New(url string, options ...ClientOption) *Client {
 // All consumers were run
 // Returns first occurred error during first session opening or nil
 func (s *Client) Run(ctx context.Context) error {
-	firstSessionErr := make(chan error, 1)
-	go s.run(ctx, firstSessionErr, true)
+	go s.run(ctx)
 
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case err := <-firstSessionErr:
+	case err := <-s.firstOccurredError:
+		s.mustReconnect.Store(false)
 		return err
 	}
 }
@@ -85,27 +98,24 @@ func (s *Client) Run(ctx context.Context) error {
 // Similar to Run but doesn't wait first successful session
 // Just pass to Observer occurred errors and retry
 func (s *Client) Serve(ctx context.Context) {
-	firstSessionErr := make(chan error, 1)
-	go s.run(ctx, firstSessionErr, false)
+	go s.run(ctx)
 }
 
-func (s *Client) run(ctx context.Context, firstSessionErr chan error, expectFirstSuccessSession bool) {
+func (s *Client) run(ctx context.Context) {
 	defer func() {
 		close(s.shutdownDone)
 	}()
 
-	sessNum := 0
 	for {
-		sessNum++
-		err := s.runSession(sessNum, firstSessionErr)
+		err := s.runSession()
 		if err == nil { //normal close
 			return
 		}
 
 		s.observer.ClientError(err)
 
-		if err != nil && sessNum == 1 && expectFirstSuccessSession {
-			return
+		if !s.mustReconnect.Load() {
+			return //prevent goroutine leak for Run if error occurred
 		}
 
 		select {
@@ -120,11 +130,10 @@ func (s *Client) run(ctx context.Context, firstSessionErr chan error, expectFirs
 	}
 }
 
-func (s *Client) runSession(sessNum int, firstSessionErr chan error) (err error) {
-	firstSessionErrWritten := false
+func (s *Client) runSession() (err error) {
 	defer func() {
-		if !firstSessionErrWritten && sessNum == 1 {
-			firstSessionErr <- err
+		if err != nil {
+			s.reportFirstOccurredErrorOnes(err)
 		}
 	}()
 
@@ -184,10 +193,7 @@ func (s *Client) runSession(sessNum int, firstSessionErr chan error) (err error)
 		closers = append(closers, consumerUnit)
 	}
 
-	if sessNum == 1 {
-		firstSessionErrWritten = true
-		firstSessionErr <- nil
-	}
+	s.reportFirstOccurredErrorOnes(nil) //to unblock Run
 
 	s.observer.ClientReady()
 
@@ -224,4 +230,10 @@ func (s *Client) runPublisher(publisher *publisher.Publisher, conn *amqp.Connect
 		return nil, errors.WithMessage(err, "run publisher")
 	}
 	return publisherUnit, nil
+}
+
+func (s *Client) reportFirstOccurredErrorOnes(err error) {
+	s.reportErrOnce.Do(func() {
+		s.firstOccurredError <- err
+	})
 }

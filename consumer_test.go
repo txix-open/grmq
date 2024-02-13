@@ -2,7 +2,6 @@ package grmq_test
 
 import (
 	"context"
-	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -137,7 +136,7 @@ func TestConsumer_ConsumerError(t *testing.T) {
 	})
 	consumerCfg := consumer.New(handler, "test")
 
-	observer := NewObserverCounter()
+	observer := NewObserverCounter(t)
 	consumer := grmq.NewConsumer(consumerCfg, ch, nil, observer)
 	err := consumer.Run()
 	require.NoError(err)
@@ -206,7 +205,7 @@ func TestConsumer_GracefulClose(t *testing.T) {
 	})
 	consumerCfg := consumer.New(handler, "test", consumer.WithPrefetchCount(5), consumer.WithConcurrency(5))
 
-	observer := NewObserverCounter()
+	observer := NewObserverCounter(t)
 	consumer := grmq.NewConsumer(consumerCfg, ch, nil, observer)
 	err := consumer.Run()
 	require.NoError(err)
@@ -225,6 +224,7 @@ func TestConsumer_GracefulClose(t *testing.T) {
 }
 
 type ObserverCounter struct {
+	test            *testing.T
 	clientReady     *atomic.Int32
 	clientError     *atomic.Int32
 	consumerError   *atomic.Int32
@@ -234,8 +234,9 @@ type ObserverCounter struct {
 	publisherFlow   *atomic.Int32
 }
 
-func NewObserverCounter() *ObserverCounter {
+func NewObserverCounter(test *testing.T) *ObserverCounter {
 	return &ObserverCounter{
+		test:            test,
 		clientReady:     &atomic.Int32{},
 		clientError:     &atomic.Int32{},
 		consumerError:   &atomic.Int32{},
@@ -247,30 +248,36 @@ func NewObserverCounter() *ObserverCounter {
 }
 
 func (o *ObserverCounter) ClientReady() {
+	o.test.Log("client ready")
 	o.clientReady.Add(1)
 }
 
 func (o *ObserverCounter) ClientError(err error) {
+	o.test.Log("client error", err)
 	o.clientError.Add(1)
 }
 
 func (o *ObserverCounter) ConsumerError(consumer consumer.Consumer, err error) {
+	o.test.Log("consumer error", err)
 	o.consumerError.Add(1)
 }
 
 func (o *ObserverCounter) ShutdownStarted() {
+	o.test.Log("shutdown started")
 	o.shutdownStarted.Add(1)
 }
 
 func (o *ObserverCounter) ShutdownDone() {
+	o.test.Log("shutdown done")
 	o.shutdownDone.Add(1)
 }
 
 func (o *ObserverCounter) PublisherError(publisher *publisher.Publisher, err error) {
-	fmt.Println(err)
+	o.test.Log("publisher error", err)
 	o.publisherError.Add(1)
 }
 
 func (o *ObserverCounter) PublishingFlow(publisher *publisher.Publisher, flow bool) {
+	o.test.Log("publisher flow", flow)
 	o.publisherFlow.Add(1)
 }

@@ -29,7 +29,7 @@ func TestClient(t *testing.T) {
 		await <- struct{}{}
 	})
 	consumer := consumer.New(handler, "queue")
-	observer := NewObserverCounter()
+	observer := NewObserverCounter(t)
 	cli := grmq.New(url,
 		grmq.WithPublishers(pub),
 		grmq.WithConsumers(consumer),
@@ -73,7 +73,7 @@ func TestClient_RunError(t *testing.T) {
 			Args: nil,
 		}},
 	}
-	observer := NewObserverCounter()
+	observer := NewObserverCounter(t)
 	cli := grmq.New(url, grmq.WithDeclarations(declarations), grmq.WithObserver(observer))
 	err := cli.Run(context.Background())
 	require.Error(err)
@@ -227,4 +227,48 @@ func TestRetries(t *testing.T) {
 
 	require.EqualValues(4, value.Load())
 	require.EqualValues(1, queueSize(t, url, "queue.DLQ"))
+}
+
+func TestClient_Serve(t *testing.T) {
+	t.Parallel()
+	require := require.New(t)
+
+	url := amqpUrl(t)
+	pub := publisher.New("exchange", "test")
+	await := make(chan struct{})
+	handler := consumer.HandlerFunc(func(ctx context.Context, delivery *consumer.Delivery) {
+		err := delivery.Ack()
+		require.NoError(err)
+		await <- struct{}{}
+	})
+	consumer := consumer.New(handler, "queue")
+	observer := NewObserverCounter(t)
+	cli := grmq.New(url,
+		grmq.WithPublishers(pub),
+		grmq.WithConsumers(consumer),
+		grmq.WithObserver(observer),
+		grmq.WithTopologyBuilding(
+			topology.WithQueue("queue"),
+			topology.WithDirectExchange("exchange"),
+			topology.WithBinding("exchange", "queue", "test"),
+		),
+	)
+	cli.Serve(context.Background())
+	time.Sleep(500 * time.Millisecond)
+	err := pub.Publish(context.Background(), &amqp091.Publishing{})
+	require.NoError(err)
+
+	select {
+	case <-await:
+	case <-time.After(1 * time.Second):
+		require.Fail("handler wasn't called")
+	}
+
+	cli.Shutdown()
+
+	require.EqualValues(1, observer.clientReady.Load())
+	require.EqualValues(0, observer.clientError.Load())
+	require.EqualValues(0, observer.consumerError.Load())
+	require.EqualValues(1, observer.shutdownStarted.Load())
+	require.EqualValues(1, observer.shutdownDone.Load())
 }
