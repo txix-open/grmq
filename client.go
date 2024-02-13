@@ -89,7 +89,9 @@ func (s *Client) Run(ctx context.Context) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	case err := <-s.firstOccurredError:
-		s.mustReconnect.Store(false)
+		if err != nil {
+			s.mustReconnect.Store(false)
+		}
 		return err
 	}
 }
