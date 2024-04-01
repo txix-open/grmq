@@ -7,12 +7,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/integration-system/grmq"
-	"github.com/integration-system/grmq/consumer"
-	"github.com/integration-system/grmq/publisher"
-	"github.com/integration-system/grmq/retry"
-	"github.com/integration-system/grmq/topology"
 	"github.com/rabbitmq/amqp091-go"
+	"github.com/txix-open/grmq"
+	"github.com/txix-open/grmq/consumer"
+	"github.com/txix-open/grmq/publisher"
+	"github.com/txix-open/grmq/retry"
+	"github.com/txix-open/grmq/topology"
 )
 
 type LogObserver struct {

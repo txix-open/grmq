@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/integration-system/grmq"
-	"github.com/integration-system/grmq/publisher"
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/require"
+	"github.com/txix-open/grmq"
+	"github.com/txix-open/grmq/publisher"
 )
 
 func TestPublisher_Publish(t *testing.T) {

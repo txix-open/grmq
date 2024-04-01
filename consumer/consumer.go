@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/integration-system/grmq/retry"
+	"github.com/txix-open/grmq/retry"
 )
 
 type Closer interface {

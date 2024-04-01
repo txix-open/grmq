@@ -1,9 +1,9 @@
 package grmq
 
 import (
-	"github.com/integration-system/grmq/topology"
 	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/txix-open/grmq/topology"
 )
 
 type Declarator struct {

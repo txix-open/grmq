@@ -1,9 +1,9 @@
 package consumer
 
 import (
-	"github.com/integration-system/grmq/retry"
 	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/txix-open/grmq/retry"
 )
 
 var (

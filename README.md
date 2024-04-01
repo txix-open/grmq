@@ -1,8 +1,8 @@
 # GRMQ
 ## Go Rabbit MQ
-![Build and test](https://github.com/integration-system/grmq/actions/workflows/main.yml/badge.svg)
-[![codecov](https://codecov.io/gh/integration-system/grmq/branch/main/graph/badge.svg?token=JMTTJ5O6WB)](https://codecov.io/gh/integration-system/grmq)
-[![Go Report Card](https://goreportcard.com/badge/github.com/integration-system/grmq)](https://goreportcard.com/report/github.com/integration-system/grmq)
+![Build and test](https://github.com/txix-open/grmq/actions/workflows/main.yml/badge.svg)
+[![codecov](https://codecov.io/gh/txix-open/grmq/branch/main/graph/badge.svg?token=JMTTJ5O6WB)](https://codecov.io/gh/txix-open/grmq)
+[![Go Report Card](https://goreportcard.com/badge/github.com/txix-open/grmq)](https://goreportcard.com/report/github.com/txix-open/grmq)
 
 What are the typical use-cases for RabbitMQ broker ?
 * We create a durable topology (exchanges, queues, bindings).

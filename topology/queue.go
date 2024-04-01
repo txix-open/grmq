@@ -1,8 +1,8 @@
 package topology
 
 import (
-	"github.com/integration-system/grmq/retry"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/txix-open/grmq/retry"
 )
 
 type QueueOption func(q *Queue)

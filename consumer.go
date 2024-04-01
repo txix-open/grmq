@@ -4,10 +4,10 @@ import (
 	"context"
 	"sync"
 
-	"github.com/integration-system/grmq/consumer"
-	"github.com/integration-system/grmq/retry"
 	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/txix-open/grmq/consumer"
+	"github.com/txix-open/grmq/retry"
 )
 
 type Consumer struct {

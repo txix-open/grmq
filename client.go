@@ -6,11 +6,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/integration-system/grmq/consumer"
-	"github.com/integration-system/grmq/publisher"
-	"github.com/integration-system/grmq/topology"
 	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/txix-open/grmq/consumer"
+	"github.com/txix-open/grmq/publisher"
+	"github.com/txix-open/grmq/topology"
 )
 
 type closer interface {

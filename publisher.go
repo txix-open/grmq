@@ -4,9 +4,9 @@ import (
 	"context"
 	"sync"
 
-	publisher2 "github.com/integration-system/grmq/publisher"
 	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
+	publisher2 "github.com/txix-open/grmq/publisher"
 )
 
 type Publisher struct {

@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: golang:1.21
+    container: golang:1.22
     services:
       rmq:
         image: rabbitmq:3.12-management-alpine

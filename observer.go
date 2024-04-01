@@ -1,8 +1,8 @@
 package grmq
 
 import (
-	"github.com/integration-system/grmq/consumer"
-	"github.com/integration-system/grmq/publisher"
+	"github.com/txix-open/grmq/consumer"
+	"github.com/txix-open/grmq/publisher"
 )
 
 type Observer interface {

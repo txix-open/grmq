@@ -1,7 +1,7 @@
 package consumer
 
 import (
-	"github.com/integration-system/grmq/retry"
+	"github.com/txix-open/grmq/retry"
 )
 
 type Option func(c *Consumer)
