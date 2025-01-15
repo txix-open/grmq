@@ -143,7 +143,7 @@ This configuration will create
   * `test.retry.2000`
 * each retry queue will have `x-message-ttl` property equal to its delay
 * each retry queue will have DLX routing to the original queue `test`
-* `consumer.Delivery.Retry()` will find a suitable queue by `x-death` header, directly publish with confirmation to the queue, manually acknowledge the delivery
+* `consumer.Delivery.Retry()` will find a suitable queue by `grmq-retry-count` header(0 by default), increment `grmq-retry-count` header, directly publish with confirmation to the queue, manually acknowledge the delivery
 * if there is no suitable retry option and `moveToDql` is `true`, it moves the message to `test.DLQ`
 * otherwise, it performs ack
 

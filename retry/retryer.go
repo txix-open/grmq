@@ -2,9 +2,13 @@ package retry
 
 import (
 	"context"
-
 	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"maps"
+)
+
+const (
+	grmqRetryCountHeader = "grmq-retry-count"
 )
 
 type Publisher interface {
@@ -26,12 +30,18 @@ func NewRetryer(originalQueue string, policy Policy, pub Publisher) *Retryer {
 }
 
 func (r *Retryer) Do(delivery *amqp.Delivery) error {
-	retry := r.nextRetry(delivery)
+	retriesCount := totalTries(delivery.Headers)
+	retry := r.nextRetry(retriesCount)
 	switch {
 	case retry != nil:
 		queue := retry.QueueName(r.originalQueue)
+		headers := maps.Clone(delivery.Headers)
+		if headers == nil {
+			headers = amqp.Table{}
+		}
+		headers[grmqRetryCountHeader] = retriesCount + 1
 		msg := &amqp.Publishing{
-			Headers:         delivery.Headers,
+			Headers:         headers,
 			ContentType:     delivery.ContentType,
 			ContentEncoding: delivery.ContentEncoding,
 			DeliveryMode:    delivery.DeliveryMode,
@@ -70,8 +80,7 @@ func (r *Retryer) Do(delivery *amqp.Delivery) error {
 	return nil
 }
 
-func (r *Retryer) nextRetry(delivery *amqp.Delivery) *Retry {
-	retriesCount := totalTries(delivery.Headers)
+func (r *Retryer) nextRetry(retriesCount int64) *Retry {
 	retriesByPolicies := int64(0)
 	for i := range r.policy.Retries {
 		retry := r.policy.Retries[i]
@@ -89,16 +98,22 @@ func (r *Retryer) nextRetry(delivery *amqp.Delivery) *Retry {
 
 func totalTries(headers amqp.Table) int64 {
 	totalRetries := int64(0)
-	xDeath, ok := headers["x-death"].([]any)
+	if headers == nil {
+		return totalRetries
+	}
+	headerValue, ok := headers[grmqRetryCountHeader]
 	if !ok {
 		return totalRetries
 	}
-	for _, elem := range xDeath {
-		table, ok := elem.(amqp.Table)
-		if !ok {
-			continue
-		}
-		totalRetries += table["count"].(int64)
+	switch xDeath := headerValue.(type) {
+	case int64:
+		totalRetries = xDeath
+	case int32:
+		totalRetries = int64(xDeath)
+	case float64:
+		totalRetries = int64(xDeath)
+	case float32:
+		totalRetries = int64(xDeath)
 	}
 	return totalRetries
 }
