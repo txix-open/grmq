@@ -5,10 +5,10 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: golang:1.22
+    container: golang:1.23
     services:
       rmq:
-        image: rabbitmq:3.12-management-alpine
+        image: rabbitmq:management-alpine
         options: >-
           --health-cmd "rabbitmqctl await_startup"
           --health-timeout 10s
