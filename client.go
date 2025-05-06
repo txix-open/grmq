@@ -209,12 +209,9 @@ func (s *Client) runSession() (err error) {
 			if !isOpen {
 				return errors.New("block channel unexpectedly closed")
 			}
-			if blocking.Active {
-				continue
+			if !blocking.Active {
+				s.observer.ConnectionBlocked(blocking)
 			}
-
-			s.observer.ConnectionBlocked(blocking)
-			return errors.Errorf("connection blocked with reason '%s'", blocking.Reason)
 		case err, isOpen := <-connCloseChan:
 			if !isOpen {
 				return errors.New("error channel unexpectedly closed")
