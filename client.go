@@ -203,20 +203,26 @@ func (s *Client) runSession() (err error) {
 
 	s.observer.ClientReady()
 
-	select {
-	case err, isOpen := <-connCloseChan:
-		if !isOpen {
-			return errors.New("error channel unexpectedly closed")
+	for {
+		select {
+		case blocking, isOpen := <-connBlockedChan:
+			if !isOpen {
+				return errors.New("block channel unexpectedly closed")
+			}
+			if blocking.Active {
+				continue
+			}
+
+			s.observer.ConnectionBlocked(blocking)
+			return errors.Errorf("connection blocked with reason '%s'", blocking.Reason)
+		case err, isOpen := <-connCloseChan:
+			if !isOpen {
+				return errors.New("error channel unexpectedly closed")
+			}
+			return err
+		case <-s.close:
+			return nil
 		}
-		return err
-	case <-s.close:
-		return nil
-	case blocked, isOpen := <-connBlockedChan:
-		if !isOpen {
-			return errors.New("block channel unexpectedly closed")
-		}
-		s.observer.ConnectionBlocked(blocked)
-		return errors.Errorf("connection blocked with reason '%s'", blocked.Reason)
 	}
 }
 
