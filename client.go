@@ -146,8 +146,8 @@ func (s *Client) runSession() (err error) {
 	defer conn.Close()
 	connCloseChan := make(chan *amqp.Error, 1)
 	connCloseChan = conn.NotifyClose(connCloseChan)
-	connBlockedChan := make(chan amqp.Blocking, 1)
-	connBlockedChan = conn.NotifyBlocked(connBlockedChan)
+	connBlockingChan := make(chan amqp.Blocking, 1)
+	connBlockingChan = conn.NotifyBlocked(connBlockingChan)
 
 	ch, err := conn.Channel()
 	if err != nil {
@@ -205,12 +205,14 @@ func (s *Client) runSession() (err error) {
 
 	for {
 		select {
-		case blocking, isOpen := <-connBlockedChan:
+		case blocking, isOpen := <-connBlockingChan:
 			if !isOpen {
 				return errors.New("block channel unexpectedly closed")
 			}
 			if blocking.Active {
-				s.observer.ConnectionBlocked(blocking)
+				s.observer.ConnectionBlocked(blocking.Reason)
+			} else {
+				s.observer.ConnectionUnblocked()
 			}
 		case err, isOpen := <-connCloseChan:
 			if !isOpen {

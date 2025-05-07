@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/require"
 	"github.com/txix-open/grmq"
 	"github.com/txix-open/grmq/consumer"
@@ -225,28 +224,30 @@ func TestConsumer_GracefulClose(t *testing.T) {
 }
 
 type ObserverCounter struct {
-	test              *testing.T
-	clientReady       *atomic.Int32
-	clientError       *atomic.Int32
-	consumerError     *atomic.Int32
-	shutdownStarted   *atomic.Int32
-	shutdownDone      *atomic.Int32
-	publisherError    *atomic.Int32
-	publisherFlow     *atomic.Int32
-	connectionBlocked *atomic.Int32
+	test                *testing.T
+	clientReady         *atomic.Int32
+	clientError         *atomic.Int32
+	consumerError       *atomic.Int32
+	shutdownStarted     *atomic.Int32
+	shutdownDone        *atomic.Int32
+	publisherError      *atomic.Int32
+	publisherFlow       *atomic.Int32
+	connectionBlocked   *atomic.Int32
+	connectionUnblocked *atomic.Int32
 }
 
 func NewObserverCounter(test *testing.T) *ObserverCounter {
 	return &ObserverCounter{
-		test:              test,
-		clientReady:       &atomic.Int32{},
-		clientError:       &atomic.Int32{},
-		consumerError:     &atomic.Int32{},
-		shutdownStarted:   &atomic.Int32{},
-		shutdownDone:      &atomic.Int32{},
-		publisherError:    &atomic.Int32{},
-		publisherFlow:     &atomic.Int32{},
-		connectionBlocked: &atomic.Int32{},
+		test:                test,
+		clientReady:         &atomic.Int32{},
+		clientError:         &atomic.Int32{},
+		consumerError:       &atomic.Int32{},
+		shutdownStarted:     &atomic.Int32{},
+		shutdownDone:        &atomic.Int32{},
+		publisherError:      &atomic.Int32{},
+		publisherFlow:       &atomic.Int32{},
+		connectionBlocked:   &atomic.Int32{},
+		connectionUnblocked: &atomic.Int32{},
 	}
 }
 
@@ -285,7 +286,12 @@ func (o *ObserverCounter) PublishingFlow(publisher *publisher.Publisher, flow bo
 	o.publisherFlow.Add(1)
 }
 
-func (o *ObserverCounter) ConnectionBlocked(block amqp091.Blocking) {
-	o.test.Log("connection blocked", block)
+func (o *ObserverCounter) ConnectionBlocked(reason string) {
+	o.test.Log("connection blocked", reason)
 	o.connectionBlocked.Add(1)
+}
+
+func (o *ObserverCounter) ConnectionUnblocked() {
+	o.test.Log("connection unblocked")
+	o.connectionUnblocked.Add(1)
 }

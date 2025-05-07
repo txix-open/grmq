@@ -1,7 +1,6 @@
 package grmq
 
 import (
-	"github.com/rabbitmq/amqp091-go"
 	"github.com/txix-open/grmq/consumer"
 	"github.com/txix-open/grmq/publisher"
 )
@@ -12,7 +11,8 @@ type Observer interface {
 	ConsumerError(consumer consumer.Consumer, err error)
 	PublisherError(publisher *publisher.Publisher, err error)
 	PublishingFlow(publisher *publisher.Publisher, flow bool)
-	ConnectionBlocked(block amqp091.Blocking)
+	ConnectionBlocked(reason string)
+	ConnectionUnblocked()
 	ShutdownStarted()
 	ShutdownDone()
 }
@@ -47,6 +47,10 @@ func (n NoopObserver) PublishingFlow(publisher *publisher.Publisher, flow bool) 
 
 }
 
-func (n NoopObserver) ConnectionBlocked(block amqp091.Blocking) {
+func (n NoopObserver) ConnectionBlocked(reason string) {
+
+}
+
+func (n NoopObserver) ConnectionUnblocked() {
 
 }
