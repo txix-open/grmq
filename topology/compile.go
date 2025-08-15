@@ -11,13 +11,21 @@ const (
 	rabbitMqDlxArg           = "x-dead-letter-exchange"
 	rabbitMqDlqRoutingKeyArg = "x-dead-letter-routing-key"
 	rabbitMqMessageTtlHeader = "x-message-ttl"
+	rabbitMqQueueTypeKey     = "x-queue-type"
+	rabbitMqQueueTypeClassic = "classic"
 )
 
 func Compile(cfg Declarations) Declarations {
 	extraQueues := make([]*Queue, 0)
 	extraExchanges := make([]*Exchange, 0)
 	extraBindings := make([]*Binding, 0)
+
 	for _, queue := range cfg.Queues {
+		queueType := rabbitMqQueueTypeClassic
+		value, ok := queue.Args[rabbitMqQueueTypeKey]
+		if ok {
+			queueType = value.(string)
+		}
 		if queue.DLQ || queue.RetryPolicy != nil {
 			dlx := NewDirectExchange(DLXName)
 			extraExchanges = append(extraExchanges, dlx)
@@ -26,7 +34,10 @@ func Compile(cfg Declarations) Declarations {
 			queue.Args[rabbitMqDlqRoutingKeyArg] = queue.Name
 
 			dlqName := fmt.Sprintf("%s.%s", queue.Name, DLQSuffix)
-			dlq := NewQueue(dlqName)
+			dlq := NewQueue(
+				dlqName,
+				WithQueueArg(rabbitMqQueueTypeKey, queueType),
+			)
 			extraQueues = append(extraQueues, dlq)
 
 			binding := NewBinding(dlx.Name, dlqName, queue.Name)
@@ -41,6 +52,7 @@ func Compile(cfg Declarations) Declarations {
 					WithQueueArg(rabbitMqMessageTtlHeader, retry.Delay.Milliseconds()),
 					WithQueueArg(rabbitMqDlxArg, DLXName),
 					WithQueueArg(rabbitMqDlqRoutingKeyArg, retryQueueName),
+					WithQueueArg(rabbitMqQueueTypeKey, queueType),
 				)
 				extraQueues = append(extraQueues, retryQueue)
 
