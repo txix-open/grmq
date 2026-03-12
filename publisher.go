@@ -10,6 +10,7 @@ import (
 )
 
 type Publisher struct {
+	conn                *amqp.Connection
 	ch                  *amqp.Channel
 	publisher           *publisher2.Publisher
 	unexpectedErr       chan *amqp.Error
@@ -18,8 +19,9 @@ type Publisher struct {
 	setConfirmationMode *sync.Once
 }
 
-func NewPublisher(publisher *publisher2.Publisher, ch *amqp.Channel, observer Observer) *Publisher {
+func NewPublisher(publisher *publisher2.Publisher, ch *amqp.Channel, observer Observer, conn *amqp.Connection) *Publisher {
 	return &Publisher{
+		conn:                conn,
 		ch:                  ch,
 		publisher:           publisher,
 		unexpectedErr:       make(chan *amqp.Error, 1),
@@ -81,13 +83,37 @@ func (p *Publisher) runWatcher() {
 			}
 			if err != nil {
 				p.observer.PublisherError(p.publisher, err)
+				if isPreconditionFailed(err) {
+					p.selfReconnect()
+				}
 				return
 			}
 		}
 	}
 }
 
+func (p *Publisher) selfReconnect() {
+	newCh, err := p.conn.Channel()
+	if err != nil {
+		return
+	}
+
+	p.ch = newCh
+	p.setConfirmationMode = &sync.Once{}
+	p.unexpectedErr = make(chan *amqp.Error, 1)
+	p.unexpectedErr = newCh.NotifyClose(p.unexpectedErr)
+	p.flow = make(chan bool, 1)
+	p.flow = newCh.NotifyFlow(p.flow)
+	p.publisher.SetRoundTripper(p)
+
+	go p.runWatcher()
+}
+
 func (p *Publisher) Close() error {
 	err := p.ch.Close()
 	return errors.WithMessage(err, "channel close")
+}
+
+func isPreconditionFailed(err *amqp.Error) bool {
+	return err.Code == amqp.PreconditionFailed
 }

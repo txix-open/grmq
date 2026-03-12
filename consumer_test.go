@@ -17,7 +17,7 @@ func TestConsumer_Run(t *testing.T) {
 	require := require.New(t)
 
 	url := amqpUrl(t)
-	ch := amqpChannel(t, url)
+	ch, _ := amqpChannel(t, url)
 	declareQueue(t, ch, "test")
 
 	publishMessages(t, ch, "test", 1)
@@ -51,7 +51,7 @@ func TestConsumer_RunWithMiddlewares(t *testing.T) {
 	require := require.New(t)
 
 	url := amqpUrl(t)
-	ch := amqpChannel(t, url)
+	ch, _ := amqpChannel(t, url)
 	declareQueue(t, ch, "test")
 
 	publishMessages(t, ch, "test", 1)
@@ -91,7 +91,7 @@ func TestConsumer_RunWithConcurrency(t *testing.T) {
 	require := require.New(t)
 
 	url := amqpUrl(t)
-	ch := amqpChannel(t, url)
+	ch, _ := amqpChannel(t, url)
 	declareQueue(t, ch, "test")
 
 	publishMessages(t, ch, "test", 2)
@@ -121,7 +121,7 @@ func TestConsumer_ConsumerError(t *testing.T) {
 	require := require.New(t)
 
 	url := amqpUrl(t)
-	ch := amqpChannel(t, url)
+	ch, _ := amqpChannel(t, url)
 	declareQueue(t, ch, "test")
 
 	publishMessages(t, ch, "test", 1)
@@ -160,7 +160,7 @@ func TestConsumer_AsyncHandler(t *testing.T) {
 	require := require.New(t)
 
 	url := amqpUrl(t)
-	ch := amqpChannel(t, url)
+	ch, _ := amqpChannel(t, url)
 	declareQueue(t, ch, "test")
 
 	publishMessages(t, ch, "test", 1)
@@ -190,7 +190,7 @@ func TestConsumer_GracefulClose(t *testing.T) {
 	require := require.New(t)
 	url := amqpUrl(t)
 
-	ch := amqpChannel(t, url)
+	ch, _ := amqpChannel(t, url)
 	declareQueue(t, ch, "test")
 
 	messagesCount := 10

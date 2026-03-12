@@ -16,12 +16,12 @@ func TestPublisher_Publish(t *testing.T) {
 	require := require.New(t)
 
 	url := amqpUrl(t)
-	ch := amqpChannel(t, url)
+	ch, conn := amqpChannel(t, url)
 
 	counter := NewObserverCounter(t)
 
 	pub := publisher.New("", "test")
-	unit := grmq.NewPublisher(pub, ch, counter)
+	unit := grmq.NewPublisher(pub, ch, counter, conn)
 	err := unit.Run()
 	require.NoError(err)
 
@@ -45,10 +45,10 @@ func TestPublisher_PublishTo(t *testing.T) {
 	require := require.New(t)
 
 	url := amqpUrl(t)
-	ch := amqpChannel(t, url)
+	ch, conn := amqpChannel(t, url)
 
 	pub := publisher.New("", "test")
-	unit := grmq.NewPublisher(pub, ch, grmq.NoopObserver{})
+	unit := grmq.NewPublisher(pub, ch, grmq.NoopObserver{}, conn)
 	err := unit.Run()
 	require.NoError(err)
 
@@ -67,12 +67,11 @@ func TestPublisher_Close(t *testing.T) {
 	require := require.New(t)
 
 	url := amqpUrl(t)
-	ch := amqpChannel(t, url)
+	ch, conn := amqpChannel(t, url)
 
 	declareQueue(t, ch, "test")
-
 	pub := publisher.New("", "test")
-	unit := grmq.NewPublisher(pub, ch, grmq.NoopObserver{})
+	unit := grmq.NewPublisher(pub, ch, grmq.NoopObserver{}, conn)
 	err := unit.Run()
 	require.NoError(err)
 
@@ -90,11 +89,11 @@ func TestPublisherError(t *testing.T) {
 	require := require.New(t)
 
 	url := amqpUrl(t)
-	ch := amqpChannel(t, url)
+	ch, conn := amqpChannel(t, url)
 
 	counter := NewObserverCounter(t)
 	pub := publisher.New("undeclared_exchange", "test")
-	unit := grmq.NewPublisher(pub, ch, counter)
+	unit := grmq.NewPublisher(pub, ch, counter, conn)
 	err := unit.Run()
 	require.NoError(err)
 
@@ -103,4 +102,37 @@ func TestPublisherError(t *testing.T) {
 
 	time.Sleep(500 * time.Millisecond)
 	require.EqualValues(1, counter.publisherError.Load())
+}
+
+func TestPublisher_ReconnectOnPreconditionFailed(t *testing.T) {
+	t.Parallel()
+	require := require.New(t)
+
+	url := amqpUrl(t)
+	_, conn := amqpChannel(t, url)
+
+	ch, err := conn.Channel()
+	require.NoError(err)
+	declareQueue(t, ch, "test")
+
+	counter := NewObserverCounter(t)
+	pub := publisher.New("", "test")
+	unit := grmq.NewPublisher(pub, ch, counter, conn)
+	err = unit.Run()
+	require.NoError(err)
+
+	err = pub.Publish(context.Background(), &amqp091.Publishing{Body: make([]byte, 18*1024*1024)})
+	require.NoError(err)
+
+	require.Eventually(func() bool {
+		return counter.publisherError.Load() >= 1
+	}, 2*time.Second, 50*time.Millisecond, "expected publisher error after 406")
+
+	err = pub.Publish(context.Background(), &amqp091.Publishing{Body: []byte("hi")})
+	require.NoError(err)
+
+	require.EqualValues(1, queueSize(t, url, "test"))
+
+	err = unit.Close()
+	require.NoError(err)
 }

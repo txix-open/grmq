@@ -239,7 +239,7 @@ func (s *Client) runPublisher(publisher *publisher.Publisher, conn *amqp.Connect
 	if err != nil {
 		return nil, errors.WithMessage(err, "create channel")
 	}
-	publisherUnit := NewPublisher(publisher, ch, s.observer)
+	publisherUnit := NewPublisher(publisher, ch, s.observer, conn)
 	err = publisherUnit.Run()
 	if err != nil {
 		return nil, errors.WithMessage(err, "run publisher")
