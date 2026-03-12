@@ -127,6 +127,9 @@ func TestPublisher_ReconnectOnPreconditionFailed(t *testing.T) {
 	require.Eventually(func() bool {
 		return counter.publisherError.Load() >= 1
 	}, 2*time.Second, 50*time.Millisecond, "expected publisher error after 406")
+	require.Eventually(func() bool {
+		return counter.publisherReconnected.Load() >= 1
+	}, 1*time.Second, 50*time.Millisecond, "expected publisher reconnect after 406")
 
 	err = pub.Publish(context.Background(), &amqp091.Publishing{Body: []byte("hi")})
 	require.NoError(err)

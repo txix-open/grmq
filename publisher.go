@@ -84,7 +84,10 @@ func (p *Publisher) runWatcher() {
 			if err != nil {
 				p.observer.PublisherError(p.publisher, err)
 				if isPreconditionFailed(err) {
-					p.selfReconnect()
+					err1 := p.selfReconnect()
+					if err1 != nil {
+						p.observer.PublisherError(p.publisher, err1)
+					}
 				}
 				return
 			}
@@ -92,10 +95,10 @@ func (p *Publisher) runWatcher() {
 	}
 }
 
-func (p *Publisher) selfReconnect() {
+func (p *Publisher) selfReconnect() error {
 	newCh, err := p.conn.Channel()
 	if err != nil {
-		return
+		return errors.WithMessage(err, "create channel while reconnect publisher")
 	}
 
 	p.ch = newCh
@@ -106,7 +109,11 @@ func (p *Publisher) selfReconnect() {
 	p.flow = newCh.NotifyFlow(p.flow)
 	p.publisher.SetRoundTripper(p)
 
+	p.observer.PublisherReconnected(p.publisher)
+
 	go p.runWatcher()
+
+	return nil
 }
 
 func (p *Publisher) Close() error {

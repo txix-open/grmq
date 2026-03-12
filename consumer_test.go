@@ -224,30 +224,32 @@ func TestConsumer_GracefulClose(t *testing.T) {
 }
 
 type ObserverCounter struct {
-	test                *testing.T
-	clientReady         *atomic.Int32
-	clientError         *atomic.Int32
-	consumerError       *atomic.Int32
-	shutdownStarted     *atomic.Int32
-	shutdownDone        *atomic.Int32
-	publisherError      *atomic.Int32
-	publisherFlow       *atomic.Int32
-	connectionBlocked   *atomic.Int32
-	connectionUnblocked *atomic.Int32
+	test                 *testing.T
+	clientReady          *atomic.Int32
+	clientError          *atomic.Int32
+	consumerError        *atomic.Int32
+	shutdownStarted      *atomic.Int32
+	shutdownDone         *atomic.Int32
+	publisherError       *atomic.Int32
+	publisherFlow        *atomic.Int32
+	connectionBlocked    *atomic.Int32
+	connectionUnblocked  *atomic.Int32
+	publisherReconnected *atomic.Int32
 }
 
 func NewObserverCounter(test *testing.T) *ObserverCounter {
 	return &ObserverCounter{
-		test:                test,
-		clientReady:         &atomic.Int32{},
-		clientError:         &atomic.Int32{},
-		consumerError:       &atomic.Int32{},
-		shutdownStarted:     &atomic.Int32{},
-		shutdownDone:        &atomic.Int32{},
-		publisherError:      &atomic.Int32{},
-		publisherFlow:       &atomic.Int32{},
-		connectionBlocked:   &atomic.Int32{},
-		connectionUnblocked: &atomic.Int32{},
+		test:                 test,
+		clientReady:          &atomic.Int32{},
+		clientError:          &atomic.Int32{},
+		consumerError:        &atomic.Int32{},
+		shutdownStarted:      &atomic.Int32{},
+		shutdownDone:         &atomic.Int32{},
+		publisherError:       &atomic.Int32{},
+		publisherFlow:        &atomic.Int32{},
+		connectionBlocked:    &atomic.Int32{},
+		connectionUnblocked:  &atomic.Int32{},
+		publisherReconnected: &atomic.Int32{},
 	}
 }
 
@@ -294,4 +296,9 @@ func (o *ObserverCounter) ConnectionBlocked(reason string) {
 func (o *ObserverCounter) ConnectionUnblocked() {
 	o.test.Log("connection unblocked")
 	o.connectionUnblocked.Add(1)
+}
+
+func (o *ObserverCounter) PublisherReconnected(publisher *publisher.Publisher) {
+	o.test.Log("publisher reconnected")
+	o.publisherReconnected.Add(1)
 }
