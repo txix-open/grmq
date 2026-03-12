@@ -11,6 +11,7 @@ type Observer interface {
 	ConsumerError(consumer consumer.Consumer, err error)
 	PublisherError(publisher *publisher.Publisher, err error)
 	PublishingFlow(publisher *publisher.Publisher, flow bool)
+	PublisherReconnected(publisher *publisher.Publisher)
 	ConnectionBlocked(reason string)
 	ConnectionUnblocked()
 	ShutdownStarted()
@@ -54,3 +55,5 @@ func (n NoopObserver) ConnectionBlocked(reason string) {
 func (n NoopObserver) ConnectionUnblocked() {
 
 }
+
+func (n NoopObserver) PublisherReconnected(publisher *publisher.Publisher) {}

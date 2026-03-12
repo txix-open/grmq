@@ -55,7 +55,7 @@ func envOrDefault(name string, defValue string) string {
 	return defValue
 }
 
-func amqpChannel(t *testing.T, url string) *amqp091.Channel {
+func amqpChannel(t *testing.T, url string) (*amqp091.Channel, *amqp091.Connection) {
 	require := require.New(t)
 	c, err := amqp091.Dial(url)
 	require.NoError(err)
@@ -67,7 +67,7 @@ func amqpChannel(t *testing.T, url string) *amqp091.Channel {
 	ch, err := c.Channel()
 	require.NoError(err)
 
-	return ch
+	return ch, c
 }
 
 func declareQueue(t *testing.T, ch *amqp091.Channel, name string) {
@@ -89,7 +89,7 @@ func publishMessages(t *testing.T, ch *amqp091.Channel, queue string, count int)
 func queueSize(t *testing.T, url string, queue string) int {
 	require := require.New(t)
 
-	ch := amqpChannel(t, url)
+	ch, _ := amqpChannel(t, url)
 
 	q, err := ch.QueueInspect(queue)
 	require.NoError(err)
