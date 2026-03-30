@@ -1,11 +1,11 @@
 module github.com/txix-open/grmq
 
-go 1.24
+go 1.26
 
 require (
 	github.com/pkg/errors v0.9.1
 	github.com/rabbitmq/amqp091-go v1.10.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
