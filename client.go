@@ -38,6 +38,8 @@ type Client struct {
 
 	close        chan struct{}
 	shutdownDone chan struct{}
+
+	currentSessionConn atomic.Pointer[amqp.Connection]
 }
 
 func New(url string, options ...ClientOption) *Client {
@@ -143,7 +145,11 @@ func (s *Client) runSession() (err error) {
 	if err != nil {
 		return errors.WithMessage(err, "dial")
 	}
-	defer conn.Close()
+	s.currentSessionConn.Store(conn)
+	defer func() {
+		_ = conn.Close()
+		s.currentSessionConn.Store(nil)
+	}()
 	connCloseChan := make(chan *amqp.Error, 1)
 	connCloseChan = conn.NotifyClose(connCloseChan)
 	connBlockingChan := make(chan amqp.Blocking, 1)
@@ -251,4 +257,10 @@ func (s *Client) reportFirstOccurredErrorOnes(err error) {
 	s.reportErrOnce.Do(func() {
 		s.firstOccurredError <- err
 	})
+}
+
+// UnsafeConnection returns the base *amqp.Connection for an active session, or a nil value if the session is not connected.
+// WARNING: It may return a nil value.
+func (s *Client) UnsafeConnection() *amqp.Connection {
+	return s.currentSessionConn.Load()
 }
