@@ -4,12 +4,14 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+// Exchange represents a RabbitMQ exchange configuration.
 type Exchange struct {
 	Name string
 	Type string
 	Args amqp.Table
 }
 
+// NewDirectExchange creates a new direct exchange.
 func NewDirectExchange(name string) *Exchange {
 	return &Exchange{
 		Name: name,
@@ -18,6 +20,7 @@ func NewDirectExchange(name string) *Exchange {
 	}
 }
 
+// NewFanoutExchange creates a new fanout exchange.
 func NewFanoutExchange(name string) *Exchange {
 	return &Exchange{
 		Name: name,
@@ -26,6 +29,7 @@ func NewFanoutExchange(name string) *Exchange {
 	}
 }
 
+// NewTopicExchange creates a new topic exchange.
 func NewTopicExchange(name string) *Exchange {
 	return &Exchange{
 		Name: name,

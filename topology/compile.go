@@ -5,15 +5,23 @@ import (
 )
 
 const (
-	DLXName   = "default-dead-letter"
+	// DLXName is the name of the default dead-letter exchange.
+	DLXName = "default-dead-letter"
+	// DLQSuffix is the suffix for dead-letter queues.
 	DLQSuffix = "DLQ"
 
-	rabbitMqDlxArg           = "x-dead-letter-exchange"
+	// rabbitMqDlxArg is the RabbitMQ argument key for dead-letter exchange.
+	rabbitMqDlxArg = "x-dead-letter-exchange"
+	// rabbitMqDlqRoutingKeyArg is the RabbitMQ argument key for dead-letter routing key.
 	rabbitMqDlqRoutingKeyArg = "x-dead-letter-routing-key"
+	// rabbitMqMessageTtlHeader is the RabbitMQ argument key for message TTL.
 	rabbitMqMessageTtlHeader = "x-message-ttl"
-	rabbitMqQueueTypeKey     = "x-queue-type"
+	// rabbitMqQueueTypeKey is the RabbitMQ argument key for queue type.
+	rabbitMqQueueTypeKey = "x-queue-type"
 )
 
+// Compile processes the declarations and automatically creates dead-letter queues,
+// retry queues, and their associated bindings based on the configuration.
 func Compile(cfg Declarations) Declarations {
 	extraQueues := make([]*Queue, 0)
 	extraExchanges := make([]*Exchange, 0)

@@ -10,6 +10,7 @@ import (
 	"github.com/txix-open/grmq/retry"
 )
 
+// Consumer wraps a consumer instance with connection management and retry support.
 type Consumer struct {
 	cfg           consumer.Consumer
 	ch            *amqp.Channel
@@ -24,6 +25,7 @@ type Consumer struct {
 	deliveries    <-chan amqp.Delivery
 }
 
+// NewConsumer creates a new Consumer instance with the specified configuration and optional retry support.
 func NewConsumer(cfg consumer.Consumer, ch *amqp.Channel, retryPub *Publisher, observer Observer) *Consumer {
 	var retryer *retry.Retryer
 	if cfg.RetryPolicy != nil {
@@ -42,6 +44,9 @@ func NewConsumer(cfg consumer.Consumer, ch *amqp.Channel, retryPub *Publisher, o
 	}
 }
 
+// Run starts the consumer and begins processing messages.
+// Configures QoS if prefetch count is set, and spawns worker goroutines
+// based on the configured concurrency level.
 func (c *Consumer) Run() error {
 	c.unexpectedErr = c.ch.NotifyClose(c.unexpectedErr)
 	go c.runUnexpectedErrorListener()
@@ -103,6 +108,8 @@ func (c *Consumer) runUnexpectedErrorListener() {
 	}
 }
 
+// Close stops the consumer, waits for all in-flight deliveries to complete,
+// and closes the channel.
 func (c *Consumer) Close() error {
 	err := c.ch.Cancel(c.cfg.Name, false)
 	if err != nil {

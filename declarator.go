@@ -6,11 +6,13 @@ import (
 	"github.com/txix-open/grmq/topology"
 )
 
+// Declarator manages RabbitMQ topology declarations (exchanges, queues, bindings).
 type Declarator struct {
 	cfg topology.Declarations
 	ch  *amqp.Channel
 }
 
+// NewDeclarator creates a new Declarator with the specified topology configuration.
 func NewDeclarator(cfg topology.Declarations, ch *amqp.Channel) *Declarator {
 	return &Declarator{
 		cfg: topology.Compile(cfg),
@@ -18,6 +20,8 @@ func NewDeclarator(cfg topology.Declarations, ch *amqp.Channel) *Declarator {
 	}
 }
 
+// Run declares all exchanges, queues, and bindings in the configured topology.
+// Returns an error if any declaration fails.
 func (c *Declarator) Run() error {
 	for _, exchange := range c.cfg.Exchanges {
 		err := c.ch.ExchangeDeclare(exchange.Name, exchange.Type, true, false, false, false, exchange.Args)
@@ -43,6 +47,7 @@ func (c *Declarator) Run() error {
 	return nil
 }
 
+// Close closes the declarator's channel.
 func (c *Declarator) Close() error {
 	err := c.ch.Close()
 	return errors.WithMessage(err, "channel close")

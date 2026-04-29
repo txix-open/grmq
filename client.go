@@ -1,3 +1,5 @@
+// Package grmq provides a high-level client for interacting with RabbitMQ,
+// supporting publishers, consumers, automatic reconnection, and topology management.
 package grmq
 
 import (
@@ -13,15 +15,19 @@ import (
 	"github.com/txix-open/grmq/topology"
 )
 
+// closer is an interface for types that can be closed.
 type closer interface {
 	Close() error
 }
 
+// DialConfig wraps amqp.Config with additional dial timeout configuration.
 type DialConfig struct {
 	amqp.Config
 	DialTimeout time.Duration
 }
 
+// Client manages connections to a RabbitMQ broker, handling publishers, consumers,
+// and topology declarations with automatic reconnection support.
 type Client struct {
 	url              string
 	dialConfig       DialConfig
@@ -42,6 +48,8 @@ type Client struct {
 	currentSessionConn atomic.Pointer[amqp.Connection]
 }
 
+// New creates a new Client instance with the specified RabbitMQ URL and optional configuration.
+// Default settings include a 10-second heartbeat and 30-second dial timeout.
 func New(url string, options ...ClientOption) *Client {
 	mustReconnect := &atomic.Bool{}
 	mustReconnect.Store(true)
@@ -78,12 +86,10 @@ func New(url string, options ...ClientOption) *Client {
 	return c
 }
 
-// Run
-// Block and wait first successfully established session
-// It means all declarations were applied successfully
-// All publishers were initialized
-// All consumers were run
-// Returns first occurred error during first session opening or nil
+// Run blocks until a successful RabbitMQ session is established.
+// It ensures all topology declarations are applied, all publishers are initialized,
+// and all consumers are running. Returns the first error encountered during
+// session initialization, or nil if successful.
 func (s *Client) Run(ctx context.Context) error {
 	go s.run(ctx)
 
@@ -98,9 +104,8 @@ func (s *Client) Run(ctx context.Context) error {
 	}
 }
 
-// Serve
-// Similar to Run but doesn't wait first successful session
-// Just pass to Observer occurred errors and retry
+// Serve starts the client without blocking for the first successful session.
+// Unlike Run, it immediately returns and relies on the Observer to handle errors and manage reconnection attempts.
 func (s *Client) Serve(ctx context.Context) {
 	go s.run(ctx)
 }
@@ -231,8 +236,8 @@ func (s *Client) runSession() (err error) {
 	}
 }
 
-// Shutdown
-// Perform graceful shutdown
+// Shutdown performs a graceful shutdown of the client, closing all publishers,
+// consumers, and the underlying connection.
 func (s *Client) Shutdown() {
 	close(s.close)
 	s.observer.ShutdownStarted()
@@ -259,8 +264,10 @@ func (s *Client) reportFirstOccurredErrorOnes(err error) {
 	})
 }
 
-// UnsafeConnection returns the base *amqp.Connection for an active session, or a nil value if the session is not connected.
-// WARNING: It may return a nil value.
+// UnsafeConnection returns the underlying *amqp.Connection for the active session.
+// Returns nil if no session is currently connected.
+//
+// Warning: This method provides direct access to the RabbitMQ connection and should be used with caution.
 func (s *Client) UnsafeConnection() *amqp.Connection {
 	return s.currentSessionConn.Load()
 }

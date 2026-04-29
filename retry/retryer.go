@@ -8,19 +8,23 @@ import (
 )
 
 const (
+	// grmqRetryCountHeader is the header key for tracking retry count.
 	grmqRetryCountHeader = "grmq-retry-count"
 )
 
+// Publisher defines an interface for publishing messages with confirmation.
 type Publisher interface {
 	PublishWithConfirmation(ctx context.Context, exchange string, routingKey string, msg *amqp.Publishing) error
 }
 
+// Retryer manages message retry logic according to a configured policy.
 type Retryer struct {
 	originalQueue string
 	policy        Policy
 	pub           Publisher
 }
 
+// NewRetryer creates a new Retryer with the specified configuration.
 func NewRetryer(originalQueue string, policy Policy, pub Publisher) *Retryer {
 	return &Retryer{
 		originalQueue: originalQueue,
@@ -29,6 +33,8 @@ func NewRetryer(originalQueue string, policy Policy, pub Publisher) *Retryer {
 	}
 }
 
+// Do processes a failed delivery according to the retry policy.
+// Returns an error if publishing or acknowledgment fails.
 func (r *Retryer) Do(delivery *amqp.Delivery) error {
 	retriesCount := totalTries(delivery.Headers)
 	retry := r.nextRetry(retriesCount)
@@ -80,6 +86,8 @@ func (r *Retryer) Do(delivery *amqp.Delivery) error {
 	return nil
 }
 
+// nextRetry returns the next retry step based on the current retry count.
+// Returns nil if no more retries are available.
 func (r *Retryer) nextRetry(retriesCount int64) *Retry {
 	retriesByPolicies := int64(0)
 	for i := range r.policy.Retries {
@@ -96,6 +104,7 @@ func (r *Retryer) nextRetry(retriesCount int64) *Retry {
 	return nil
 }
 
+// totalTries extracts the total retry count from message headers.
 func totalTries(headers amqp.Table) int64 {
 	totalRetries := int64(0)
 	if headers == nil {

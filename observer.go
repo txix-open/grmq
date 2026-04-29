@@ -5,6 +5,9 @@ import (
 	"github.com/txix-open/grmq/publisher"
 )
 
+// Observer defines an interface for monitoring client lifecycle events and errors.
+// Implement this interface to receive notifications about connection state,
+// publisher/consumer errors, and shutdown events.
 type Observer interface {
 	ClientReady()
 	ClientError(err error)
@@ -18,6 +21,9 @@ type Observer interface {
 	ShutdownDone()
 }
 
+// NoopObserver provides a default no-op implementation of the Observer interface.
+// Use this when you don't need to observe client events.
+// You can also embed NoopObserver in your observer struct
 type NoopObserver struct {
 }
 

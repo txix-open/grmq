@@ -153,6 +153,3 @@ Don't forget to delete old retry queues.
 
 ## State and road map
 * the package is used in production (reconnection works perfect)
-* more tests need to be implemented
-* add `go doc`
-* add supporting for publishing confirmation to achieve more reliable publishing
