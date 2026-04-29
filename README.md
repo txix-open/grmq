@@ -1,5 +1,6 @@
 # GRMQ
 ## Go Rabbit MQ
+[![Go Reference](https://pkg.go.dev/badge/github.com/txix-open/grmq.svg)](https://pkg.go.dev/github.com/txix-open/grmq)
 ![Build and test](https://github.com/txix-open/grmq/actions/workflows/main.yml/badge.svg)
 [![codecov](https://codecov.io/gh/txix-open/grmq/branch/main/graph/badge.svg?token=JMTTJ5O6WB)](https://codecov.io/gh/txix-open/grmq)
 [![Go Report Card](https://goreportcard.com/badge/github.com/txix-open/grmq)](https://goreportcard.com/report/github.com/txix-open/grmq)
