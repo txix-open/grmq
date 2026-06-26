@@ -99,7 +99,15 @@ func queueSize(t *testing.T, url string, queue string) int {
 
 	ch, _ := amqpChannel(t, url)
 
-	q, err := ch.QueueInspect(queue)
+	q, err := ch.QueueDeclarePassive(
+		queue,
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	require.NoError(err)
 	require.NoError(err)
 	return q.Messages
 }
