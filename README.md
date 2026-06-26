@@ -48,7 +48,11 @@ func main() {
 	)
 
 	simpleHandler := consumer.HandlerFunc(func(ctx context.Context, delivery *consumer.Delivery) {
-		log.Printf("message body: %s, queue: %s", delivery.Source().Body, delivery.Source().RoutingKey)
+		log.Printf("original message body: %s, message body after middlewares: %s, queue: %s",
+			delivery.Source().Body,
+			delivery.Body,
+			delivery.Source().RoutingKey,
+		)
 		err := delivery.Ack()
 		if err != nil {
 			panic(err)
@@ -68,7 +72,11 @@ func main() {
 		retry.WithDelay(2*time.Second, 1),
 	)
 	retryHandler := consumer.HandlerFunc(func(ctx context.Context, delivery *consumer.Delivery) {
-		log.Printf("message body: %s, queue: %s", delivery.Source().Body, delivery.Source().RoutingKey)
+		log.Printf("original message body: %s, message body after middlewares: %s, queue: %s",
+			delivery.Source().Body,
+			delivery.Body,
+			delivery.Source().RoutingKey,
+		)
 		err := delivery.Retry()
 		if err != nil {
 			panic(err)
