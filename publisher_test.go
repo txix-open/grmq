@@ -1,7 +1,6 @@
 package grmq_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -25,11 +24,11 @@ func TestPublisher_Publish(t *testing.T) {
 	err := unit.Run()
 	require.NoError(err)
 
-	err = pub.Publish(context.Background(), &amqp091.Publishing{})
+	err = pub.Publish(t.Context(), &amqp091.Publishing{})
 	require.NoError(err)
 
 	declareQueue(t, ch, "test")
-	err = pub.Publish(context.Background(), &amqp091.Publishing{})
+	err = pub.Publish(t.Context(), &amqp091.Publishing{})
 	require.NoError(err)
 
 	require.EqualValues(1, queueSize(t, url, "test"))
@@ -53,7 +52,7 @@ func TestPublisher_PublishTo(t *testing.T) {
 	require.NoError(err)
 
 	declareQueue(t, ch, "test2")
-	err = pub.PublishTo(context.Background(), "", "test2", &amqp091.Publishing{})
+	err = pub.PublishTo(t.Context(), "", "test2", &amqp091.Publishing{})
 	require.NoError(err)
 
 	require.EqualValues(1, queueSize(t, url, "test2"))
@@ -78,7 +77,7 @@ func TestPublisher_Close(t *testing.T) {
 	err = unit.Close()
 	require.NoError(err)
 
-	err = pub.Publish(context.Background(), &amqp091.Publishing{})
+	err = pub.Publish(t.Context(), &amqp091.Publishing{})
 	require.Error(err)
 
 	require.EqualValues(0, queueSize(t, url, "test"))
@@ -97,7 +96,7 @@ func TestPublisherError(t *testing.T) {
 	err := unit.Run()
 	require.NoError(err)
 
-	err = pub.Publish(context.Background(), &amqp091.Publishing{})
+	err = pub.Publish(t.Context(), &amqp091.Publishing{})
 	require.NoError(err)
 
 	time.Sleep(500 * time.Millisecond)
@@ -121,7 +120,7 @@ func TestPublisher_ReconnectOnPreconditionFailed(t *testing.T) {
 	err = unit.Run()
 	require.NoError(err)
 
-	err = pub.Publish(context.Background(), &amqp091.Publishing{Body: make([]byte, 18*1024*1024)})
+	err = pub.Publish(t.Context(), &amqp091.Publishing{Body: make([]byte, 18*1024*1024)})
 	require.NoError(err)
 
 	require.Eventually(func() bool {
@@ -131,7 +130,7 @@ func TestPublisher_ReconnectOnPreconditionFailed(t *testing.T) {
 		return counter.publisherReconnected.Load() >= 1
 	}, 1*time.Second, 50*time.Millisecond, "expected publisher reconnect after 406")
 
-	err = pub.Publish(context.Background(), &amqp091.Publishing{Body: []byte("hi")})
+	err = pub.Publish(t.Context(), &amqp091.Publishing{Body: []byte("hi")})
 	require.NoError(err)
 
 	require.EqualValues(1, queueSize(t, url, "test"))

@@ -14,6 +14,8 @@ import (
 )
 
 func amqpUrl(t *testing.T) string {
+	t.Helper()
+
 	require := require.New(t)
 
 	host := envOrDefault("RMQ_HOST", "127.0.0.1")
@@ -56,6 +58,8 @@ func envOrDefault(name string, defValue string) string {
 }
 
 func amqpChannel(t *testing.T, url string) (*amqp091.Channel, *amqp091.Connection) {
+	t.Helper()
+
 	require := require.New(t)
 	c, err := amqp091.Dial(url)
 	require.NoError(err)
@@ -71,6 +75,7 @@ func amqpChannel(t *testing.T, url string) (*amqp091.Channel, *amqp091.Connectio
 }
 
 func declareQueue(t *testing.T, ch *amqp091.Channel, name string) {
+	t.Helper()
 	require := require.New(t)
 
 	_, err := ch.QueueDeclare(name, true, false, false, false, nil)
@@ -78,20 +83,43 @@ func declareQueue(t *testing.T, ch *amqp091.Channel, name string) {
 }
 
 func publishMessages(t *testing.T, ch *amqp091.Channel, queue string, count int) {
+	t.Helper()
 	require := require.New(t)
 
-	for i := 0; i < count; i++ {
+	for range count {
 		err := ch.PublishWithContext(context.Background(), "", queue, true, false, amqp091.Publishing{})
 		require.NoError(err)
 	}
 }
 
 func queueSize(t *testing.T, url string, queue string) int {
+	t.Helper()
+
 	require := require.New(t)
 
 	ch, _ := amqpChannel(t, url)
 
-	q, err := ch.QueueInspect(queue)
+	q, err := ch.QueueDeclarePassive(
+		queue,
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	require.NoError(err)
 	require.NoError(err)
 	return q.Messages
+}
+
+func consume(t *testing.T, url string, queue string) amqp091.Delivery {
+	t.Helper()
+
+	require := require.New(t)
+
+	ch, _ := amqpChannel(t, url)
+	delivery, ok, err := ch.Get(queue, true)
+	require.NoError(err)
+	require.True(ok)
+	return delivery
 }

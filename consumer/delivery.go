@@ -18,6 +18,11 @@ type Donner interface {
 
 // Delivery wraps an AMQP delivery with acknowledgment and retry capabilities.
 type Delivery struct {
+	// Body contains the payload visible to handlers.
+	// It may differ from source.Body (e.g. after transparent decompression).
+	// The original AMQP payload is always preserved in source.Body.
+	Body []byte
+
 	donner  Donner
 	source  *amqp.Delivery
 	retryer *retry.Retryer
@@ -30,6 +35,7 @@ func NewDelivery(donner Donner, source *amqp.Delivery, retrier *retry.Retryer) *
 		donner:  donner,
 		source:  source,
 		retryer: retrier,
+		Body:    source.Body,
 	}
 }
 
