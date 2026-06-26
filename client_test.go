@@ -108,7 +108,12 @@ func TestDLQ(t *testing.T) {
 	pub := publisher.New("exchange", "key")
 	await := make(chan struct{})
 	value := atomic.Int32{}
+	expectedBody := []byte(`{"field": "value"}`)
+
 	handler := consumer.HandlerFunc(func(ctx context.Context, delivery *consumer.Delivery) {
+		require.Equal(expectedBody, delivery.Source().Body)
+		delivery.Body = []byte("some new body")
+
 		if value.Add(1) == 1 {
 			err := delivery.Nack(true)
 			require.NoError(err)
@@ -131,7 +136,7 @@ func TestDLQ(t *testing.T) {
 	err := cli.Run(t.Context())
 	require.NoError(err)
 
-	err = pub.Publish(t.Context(), &amqp091.Publishing{})
+	err = pub.Publish(t.Context(), &amqp091.Publishing{Body: expectedBody})
 	require.NoError(err)
 
 	select {
@@ -144,6 +149,9 @@ func TestDLQ(t *testing.T) {
 
 	require.EqualValues(2, value.Load())
 	require.EqualValues(1, queueSize(t, url, "queue.DLQ"))
+
+	delivery := consume(t, url, "queue.DLQ")
+	require.Equal(expectedBody, delivery.Body)
 }
 
 func TestPersistentMode(t *testing.T) {
@@ -195,7 +203,11 @@ func TestRetries(t *testing.T) {
 		retry.WithDelay(500*time.Millisecond, 2),
 		retry.WithDelay(1*time.Second, 1),
 	)
+	expectedBody := []byte(`{"field": "value"}`)
 	handler := consumer.HandlerFunc(func(ctx context.Context, delivery *consumer.Delivery) {
+		require.Equal(expectedBody, delivery.Source().Body)
+		delivery.Body = []byte("some new body")
+
 		value := value.Add(1)
 		err := delivery.Retry()
 		require.NoError(err)
@@ -214,7 +226,7 @@ func TestRetries(t *testing.T) {
 	err := cli.Run(t.Context())
 	require.NoError(err)
 
-	err = pub.Publish(t.Context(), &amqp091.Publishing{})
+	err = pub.Publish(t.Context(), &amqp091.Publishing{Body: expectedBody})
 	require.NoError(err)
 
 	select {
@@ -227,6 +239,9 @@ func TestRetries(t *testing.T) {
 
 	require.EqualValues(4, value.Load())
 	require.EqualValues(1, queueSize(t, url, "queue.DLQ"))
+
+	delivery := consume(t, url, "queue.DLQ")
+	require.Equal(expectedBody, delivery.Body)
 }
 
 func TestClient_Serve(t *testing.T) {
