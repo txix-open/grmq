@@ -40,10 +40,10 @@ func TestClient(t *testing.T) {
 			topology.WithBinding("exchange", "queue", "test"),
 		),
 	)
-	err := cli.Run(context.Background())
+	err := cli.Run(t.Context())
 	require.NoError(err)
 
-	err = pub.Publish(context.Background(), &amqp091.Publishing{})
+	err = pub.Publish(t.Context(), &amqp091.Publishing{})
 	require.NoError(err)
 
 	select {
@@ -75,7 +75,7 @@ func TestClient_RunError(t *testing.T) {
 	}
 	observer := NewObserverCounter(t)
 	cli := grmq.New(url, grmq.WithDeclarations(declarations), grmq.WithObserver(observer))
-	err := cli.Run(context.Background())
+	err := cli.Run(t.Context())
 	require.Error(err)
 
 	cli.Shutdown()
@@ -96,7 +96,7 @@ func TestInvalidCred(t *testing.T) {
 	u.User = url.UserPassword(u.User.Username(), "invalid_pass")
 
 	cli := grmq.New(u.String())
-	err = cli.Run(context.Background())
+	err = cli.Run(t.Context())
 	require.Error(err)
 }
 
@@ -128,10 +128,10 @@ func TestDLQ(t *testing.T) {
 			topology.WithBinding("exchange", "queue", "key"),
 		),
 	)
-	err := cli.Run(context.Background())
+	err := cli.Run(t.Context())
 	require.NoError(err)
 
-	err = pub.Publish(context.Background(), &amqp091.Publishing{})
+	err = pub.Publish(t.Context(), &amqp091.Publishing{})
 	require.NoError(err)
 
 	select {
@@ -167,10 +167,10 @@ func TestPersistentMode(t *testing.T) {
 			topology.WithQueue("queue"),
 		),
 	)
-	err := cli.Run(context.Background())
+	err := cli.Run(t.Context())
 	require.NoError(err)
 
-	err = pub.Publish(context.Background(), &amqp091.Publishing{})
+	err = pub.Publish(t.Context(), &amqp091.Publishing{})
 	require.NoError(err)
 
 	select {
@@ -211,10 +211,10 @@ func TestRetries(t *testing.T) {
 			topology.WithQueue("queue", topology.WithDLQ(true), topology.WithRetryPolicy(retryPolicy)),
 		),
 	)
-	err := cli.Run(context.Background())
+	err := cli.Run(t.Context())
 	require.NoError(err)
 
-	err = pub.Publish(context.Background(), &amqp091.Publishing{})
+	err = pub.Publish(t.Context(), &amqp091.Publishing{})
 	require.NoError(err)
 
 	select {
@@ -253,9 +253,9 @@ func TestClient_Serve(t *testing.T) {
 			topology.WithBinding("exchange", "queue", "test"),
 		),
 	)
-	cli.Serve(context.Background())
+	cli.Serve(t.Context())
 	time.Sleep(500 * time.Millisecond)
-	err := pub.Publish(context.Background(), &amqp091.Publishing{})
+	err := pub.Publish(t.Context(), &amqp091.Publishing{})
 	require.NoError(err)
 
 	select {
